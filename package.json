@@ -1,0 +1,22 @@
+{
+  "name": "vansalse",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./bin/www"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "activate": "^0.0.1",
+    "base": "^3.0.0",
+    "conda": "^0.0.1-a17",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "nodemon": "^2.0.18",
+    "pg": "^8.7.3"
+  }
+}
