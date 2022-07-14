@@ -4,10 +4,8 @@ let routeRouter = express.Router();
 const crypto = require("crypto");
 const { Client } = require("pg");
 
-function randomIntFromInterval(min, max) { // min and max included 
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
 
+// +++++++++++++++++++ TBM_ROUTE +++++++++++++++++++ 
 routeRouter.post("/getRoute", async (req, res) => {
   try {
     const client = new Client();
@@ -41,6 +39,7 @@ routeRouter.post("/getRoute", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ TBM_CUSTOMER_HD +++++++++++++++++++ 
 routeRouter.post("/getRouteTransfers", async (req, res) => {
   try {
     const client = new Client();
@@ -78,6 +77,7 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ TBT_POHD && TBT_PODT +++++++++++++++++++ 
 routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
   try {
     const client = new Client();
@@ -100,7 +100,8 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
       FROM "TBT_POHD" HD
       INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
       WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2
-      GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cBASKCD",DT."iTOTAL"`,
+      GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cBASKCD",DT."iTOTAL"
+      ORDER BY  DT."iTOTAL" DESC`,
       [custcd, pocd]
     );
 
@@ -155,6 +156,118 @@ routeRouter.post("/getPOCD", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ TBT_PODT +++++++++++++++++++ 
+routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
+  try {
+    const client = new Client();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cPOCD = req.body.cPOCD;
+
+    const result = await client.query(
+      `SELECT * FROM "TBT_PODT" WHERE "cPOCD"= $1`,
+      [cPOCD]
+    );
+
+    await client.end();
+
+    res.json(result.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+routeRouter.post("/updatePODT-PREPAIRSTATUS", async (req, res) => {
+  try {
+    const client = new Client();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cPREPAIRSTATUS = req.body.cPREPAIRSTATUS;
+    var iPREPAIRAMOUT = req.body.iPREPAIRAMOUT;
+    var cPOCD = req.body.cPOCD;
+    var iSEQ = req.body.iSEQ;
+
+     await client.query(
+      `UPDATE "TBT_PODT" 
+      SET 
+      "cPREPAIRSTATUS" = $1,
+      "iPREPAIRAMOUT" = $2
+      WHERE "cPOCD" IN ( $3 ) AND  "iSEQ" IN($4)`,
+      [cPREPAIRSTATUS,iPREPAIRAMOUT,cPOCD,iSEQ]
+    );
+
+    await client.end();
+    const result = {
+      success: true,
+      message: "update successfully",
+      result: null,
+    };
+    res.json(result);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ TBT_POHD +++++++++++++++++++ 
+routeRouter.post("/updatePOHD-PREPAIRCFSTATUS", async (req, res) => {
+  try {
+    const client = new Client();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cPREPAIRCFSTATUS = req.body.cPREPAIRCFSTATUS;
+    var cPOCD = req.body.cPOCD;
+
+     await client.query(
+      `UPDATE "TBT_POHD" 
+      SET 
+      "cPREPAIRCFSTATUS" = $1
+      WHERE "cPOCD" IN ( $2 )`,
+      [cPREPAIRCFSTATUS,cPOCD]
+    );
+
+    await client.end();
+    const result = {
+      success: true,
+      message: "update successfully",
+      result: null,
+    };
+    res.json(result);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
 // ++++++++++++++ TBT_POPREPAIRHD ++++++++++++++
 // insert
 routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
@@ -174,8 +287,6 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
     let dateSplit = dateInput.split("/");
     let newDateFormat = dateSplit[2] + "-" + dateSplit[1] + "-" + dateSplit[0];
     let dateData = new Date(newDateFormat);
-    const stInt = randomIntFromInterval(1, 999);
-    const ndInt = randomIntFromInterval(1, 999);
 
     var cGUID = `${crypto.randomUUID()}`;
     var cPOCD = req.body.cPOCD;
@@ -192,7 +303,7 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
     var iWEIGHT = req.body.iWEIGHT;
     var cCUSTCD = req.body.cCUSTCD;
     var iDPBASKET = req.body.iDPBASKET;
-    var iTOTAL = req.body.cRTECD;
+    var iSUMTOTAL = req.body.iSUMTOTAL;
     var iPAID = req.body.iPAID;
     var dCREADT = dateNow;
     var cCREABY = createBy;
@@ -200,7 +311,7 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
     var cUPDABY = createBy;
 
     // TBT_POPREPAIRDT
-    var iSEQ = stInt*ndInt;
+    var iSEQ = 1;
     var cSTATUSDT = 'Y';
     var cPRODCD = '';
     var cPRODNM = '';
@@ -213,6 +324,7 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
     var iDISCOUNT = 0;
     var cDISCOUNT = '';
     var iFREE = 0;
+    var iTOTAL = iSUMTOTAL;
     var cBASKCD = '';
     var cBASKNM = '';
     var cINSERTYPE = 'A';
@@ -226,7 +338,7 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
       ("cGUID", "cPOCD", "dDATE", "cSTATUS", 
       "cBRANCD", "cGRPCD", "cRTECD", "cVEHICD","cDRIVER",
       "cPLATE", "cPROVINCE","iCAP","iWEIGHT","cCUSTCD",
-      "iDPBASKET","iTOTAL","iPAID","dCREADT","cCREABY",
+      "iDPBASKET","iSUMTOTAL","iPAID","dCREADT","cCREABY",
       "dUPDADT","cUPDABY"
       ) 
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
@@ -246,7 +358,7 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
         iWEIGHT,
         cCUSTCD,
         iDPBASKET,
-        iTOTAL,
+        iSUMTOTAL,
         iPAID,
         dCREADT,
         cCREABY,
@@ -347,7 +459,7 @@ routeRouter.post("/updatePOPREPAIRHD", async (req, res) => {
     var iWEIGHT = req.body.iWEIGHT;
     var cCUSTCD = req.body.cCUSTCD;
     var iDPBASKET = req.body.iDPBASKET;
-    var iTOTAL = req.body.iTOTAL;
+    var iSUMTOTAL = req.body.iSUMTOTAL;
     var iPAID = req.body.iPAID;
     var dUPDADT = dateNow;
     var cUPDABY = updateBy;
@@ -368,7 +480,7 @@ routeRouter.post("/updatePOPREPAIRHD", async (req, res) => {
       "iWEIGHT"= $11,
       "cCUSTCD"= $12,
       "iDPBASKET"= $13,
-      "iTOTAL"= $14,
+      "iSUMTOTAL"= $14,
       "iPAID"= $15,
       "dUPDADT"= $16,
       "cUPDABY"= $17
@@ -387,26 +499,11 @@ routeRouter.post("/updatePOPREPAIRHD", async (req, res) => {
         iWEIGHT,
         cCUSTCD,
         iDPBASKET,
-        iTOTAL,
+        iSUMTOTAL,
         iPAID,
         dUPDADT,
         cUPDABY,
         cPOCD,
-      ]
-    );
-
-    await client.query(
-      `UPDATE "TBT_POPREPAIRDT" 
-      SET 
-      "iTOTAL"= $1,
-      "dUPDADT"= $2,
-      "cUPDABY"= $3
-      WHERE "cPOCD"  IN ( $4)`,
-      [
-        iTOTAL,
-        dUPDADT,
-        cUPDABY,
-        cPOCD
       ]
     );
 
@@ -707,20 +804,6 @@ routeRouter.post("/updatePOPREPAIRDT", async (req, res) => {
       ]
     );
 
-    await client.query(
-      `UPDATE "TBT_POPREPAIRHD" 
-      SET 
-      "iTOTAL"= $1,
-      "dUPDADT"= $2,
-      "cUPDABY"= $3
-      WHERE "cPOCD"  IN ( $4)`,
-      [
-        iTOTAL,
-        dUPDADT,
-        cUPDABY,
-        cPOCD
-      ]
-    );
 
     await client.end();
     const result = {
