@@ -170,7 +170,15 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
     var cPOCD = req.body.cPOCD;
 
     const result = await client.query(
-      `SELECT * FROM "TBT_PODT" WHERE "cPOCD"= $1`,
+      `SELECT DT."cGUID",DT."cPOCD",DT."iSEQ",DT."cPRODCD",DT."cPRODNM",DT."cBRNDCD",
+      DT."cBRNDNM",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cPROMO",DT."iDISCOUNT",
+      DT."cDISCOUNT",DT."iFREE",DT."iTOTAL",DT."cBASKCD",DT."cBASKNM",DT."cSTATUS",
+      DT."dCREADT",DT."cCREABY",DT."dUPDADT",DT."cUPDABY",DT."cINSERTYPE",DT."iSUNITPRICE",
+      DT."iMUNITPRICE",DT."iLUNITPRICE",DT."cPREPAIRSTATUS",DT."iPREPAIRAMOUT",
+      PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",PRO."cPHOTO_NM"
+      FROM "TBT_PODT" AS DT 
+      LEFT JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD" = PRO."cPRODCD"
+      WHERE DT."cPOCD"= $1`,
       [cPOCD]
     );
 
@@ -242,14 +250,16 @@ routeRouter.post("/updatePOHD-PREPAIRCFSTATUS", async (req, res) => {
     });
 
     var cPREPAIRCFSTATUS = req.body.cPREPAIRCFSTATUS;
+    var iBASKETTOTAL = req.body.iBASKETTOTAL;
     var cPOCD = req.body.cPOCD;
 
      await client.query(
       `UPDATE "TBT_POHD" 
       SET 
-      "cPREPAIRCFSTATUS" = $1
-      WHERE "cPOCD" IN ( $2 )`,
-      [cPREPAIRCFSTATUS,cPOCD]
+      "cPREPAIRCFSTATUS" = $1,
+      "iBASKETTOTAL" = $2
+      WHERE "cPOCD" IN ( $3 )`,
+      [cPREPAIRCFSTATUS,iBASKETTOTAL,cPOCD]
     );
 
     await client.end();
