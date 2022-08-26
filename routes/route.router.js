@@ -856,13 +856,13 @@ routeRouter.post("/getLocationOfStore", async (req, res) => {
       }
     });
 
-    var CUSTCD = req.body.CUSTCD;
+    var cCUSTCD = req.body.cCUSTCD;
 
     const result = await client.query(
       `SELECT "cGUID","cCUSTCD","cLATITUDE","cLONGTITUDE","dUPDADT","cUPDABY" 
       FROM "TBM_CUSTOMER_DT" 
       WHERE "cCUSTCD" = $1`,
-      [CUSTCD]
+      [cCUSTCD]
     );
 
     await client.end();
