@@ -842,4 +842,39 @@ routeRouter.post("/updatePOPREPAIRDT", async (req, res) => {
     res.json(result);
   }
 });
+
+// +++++++++++++++++++ TBM_CUSTOMER_DT +++++++++++++++++++ 
+routeRouter.post("/getLocationOfStore", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var CUSTCD = req.body.CUSTCD;
+
+    const result = await client.query(
+      `SELECT "cGUID","cCUSTCD","cLATITUDE","cLONGTITUDE","dUPDADT","cUPDABY" 
+      FROM "TBM_CUSTOMER_DT" 
+      WHERE "cCUSTCD" = $1`,
+      [CUSTCD]
+    );
+
+    await client.end();
+
+    res.json(result.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
 module.exports = routeRouter;
