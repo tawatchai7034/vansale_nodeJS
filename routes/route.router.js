@@ -53,6 +53,7 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
     });
 
     var id = req.body.id;
+    var shippingDate = req.body.dSHIPDATE;
 
     const result = await client.query(
       `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
@@ -71,8 +72,8 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
         ON DT."cCUSTCD" = RD."cCUSTCD"
         LEFT JOIN "TBT_POHD" AS HD
         ON CHD."cCUSTCD" = HD."cCUSTCD"
-        WHERE RD."cRTECD" = $1`,
-      [id]
+        WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2`,
+      [id,shippingDate]
     );
 
     await client.end();
@@ -867,7 +868,7 @@ routeRouter.post("/getLocationOfStore", async (req, res) => {
 
     await client.end();
 
-    res.json(result.rows);
+    res.json(result.rows[0]);
   } catch (err) {
     const result = {
       success: false,
