@@ -57,22 +57,22 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
 
     const result = await client.query(
       `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
-		CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
-		CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
-		CHD."cISBASKET",CHD."cSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
-		CHD."cUPDABY",RD."cGRPCD",RD."cRTECD",DT."cISPHOTO",DT."cPHOTO_SERV",
-        DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cSHIPTO",DT."cLOCATION",
-		DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cASSET",
-		DT."cLATITUDE",DT."cLONGTITUDE",
-		HD."cPREPAIRCFSTATUS" 
-		FROM "TBM_CUSTOMER_HD" AS CHD
-        INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
-        ON CHD."cCUSTCD" = RD."cCUSTCD"
-        INNER JOIN "TBM_CUSTOMER_DT" AS DT
-        ON DT."cCUSTCD" = RD."cCUSTCD"
-        LEFT JOIN "TBT_POHD" AS HD
-        ON CHD."cCUSTCD" = HD."cCUSTCD"
-        WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2`,
+      CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
+      CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
+      CHD."cISBASKET",CHD."cSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
+      CHD."cUPDABY",CHD."cDISTANCS",RD."cGRPCD",RD."cRTECD",DT."cISPHOTO",DT."cPHOTO_SERV",
+          DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cSHIPTO",DT."cLOCATION",
+      DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cASSET",
+      DT."cLATITUDE",DT."cLONGTITUDE",
+      HD."cPREPAIRCFSTATUS" 
+      FROM "TBM_CUSTOMER_HD" AS CHD
+          INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
+          ON CHD."cCUSTCD" = RD."cCUSTCD"
+          INNER JOIN "TBM_CUSTOMER_DT" AS DT
+          ON DT."cCUSTCD" = RD."cCUSTCD"
+          LEFT JOIN "TBT_POHD" AS HD
+          ON CHD."cCUSTCD" = HD."cCUSTCD"
+          WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2`,
       [id,shippingDate]
     );
 
@@ -864,6 +864,48 @@ routeRouter.post("/getLocationOfStore", async (req, res) => {
       FROM "TBM_CUSTOMER_DT" 
       WHERE "cCUSTCD" = $1`,
       [cCUSTCD]
+    );
+
+    await client.end();
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ route of driver in today +++++++++++++++++++ 
+routeRouter.post("/getRouteToday", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cVEHINM = req.body.cVEHINM;
+    var cPLATE = req.body.cPLATE;
+    var cRTENM = req.body.cRTENM;
+
+    const result = await client.query(
+      `SELECT RO."cRTECD","cRTENM" FROM "TBM_VEHICLE" AS VE
+      INNER JOIN "TBM_MAP_ROUTE" AS MR
+       ON MR."cVEHICD" = VE."cVEHICD"
+      INNER  JOIN "TBM_ROUTE" AS RO
+       ON RO."cRTECD" = MR."cRTECD"
+       WHERE VE."cVEHINM" = $1 AND 
+       VE."cPLATE" = $2AND 
+       RO."cRTENM" LIKE $3`,
+      [cVEHINM,cPLATE,cRTENM]
     );
 
     await client.end();
