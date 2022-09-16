@@ -4,8 +4,10 @@ let routeRouter = express.Router();
 const crypto = require("crypto");
 const { Client } = require("pg");
 
+let dateTime = new Date().toJSON();
+var uuid = `${crypto.randomUUID()}`;
 
-// +++++++++++++++++++ TBM_ROUTE +++++++++++++++++++ 
+// +++++++++++++++++++ TBM_ROUTE +++++++++++++++++++
 routeRouter.post("/getRoute", async (req, res) => {
   try {
     const client = new Client();
@@ -39,7 +41,7 @@ routeRouter.post("/getRoute", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ TBM_CUSTOMER_HD +++++++++++++++++++ 
+// +++++++++++++++++++ TBM_CUSTOMER_HD +++++++++++++++++++
 routeRouter.post("/getRouteTransfers", async (req, res) => {
   try {
     const client = new Client();
@@ -61,10 +63,10 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
       CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
       CHD."cISBASKET",CHD."cSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
       CHD."cUPDABY",CHD."cDISTANCS",RD."cGRPCD",RD."cRTECD",DT."cISPHOTO",DT."cPHOTO_SERV",
-          DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cSHIPTO",DT."cLOCATION",
+      DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
       DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cASSET",
       DT."cLATITUDE",DT."cLONGTITUDE",
-      HD."cPREPAIRCFSTATUS" 
+      HD."cPREPAIRCFSTATUS",HD."cPOSTATUS"
       FROM "TBM_CUSTOMER_HD" AS CHD
           INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
           ON CHD."cCUSTCD" = RD."cCUSTCD"
@@ -73,7 +75,7 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
           LEFT JOIN "TBT_POHD" AS HD
           ON CHD."cCUSTCD" = HD."cCUSTCD"
           WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2`,
-      [id,shippingDate]
+      [id, shippingDate]
     );
 
     await client.end();
@@ -89,7 +91,7 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ TBT_POHD && TBT_PODT +++++++++++++++++++ 
+// +++++++++++++++++++ TBT_POHD && TBT_PODT +++++++++++++++++++
 routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
   try {
     const client = new Client();
@@ -142,17 +144,18 @@ routeRouter.post("/getPOCD", async (req, res) => {
       }
     });
 
-    var custcd = req.body.custcd;
+    var cCUSTCD = req.body.cCUSTCD;
+    var dSHIPDATE = req.body.dSHIPDATE;
 
     const result = await client.query(
-      `SELECT HD."cCUSTCD",HD."cPOCD",HD."dPODATE"  
+      `SELECT HD."cCUSTCD",HD."cPOCD",HD."dPODATE",HD."dSHIPDATE"   
       FROM "TBT_POHD" HD
       INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
-      WHERE HD."cCUSTCD" = $1
+      WHERE HD."cCUSTCD" = $1  AND HD."dSHIPDATE"::date = $2
       GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cBASKCD",DT."iTOTAL"
       ORDER BY HD."dPODATE" DESC
       LIMIT 1`,
-      [custcd]
+      [cCUSTCD,dSHIPDATE]
     );
 
     await client.end();
@@ -168,7 +171,7 @@ routeRouter.post("/getPOCD", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ TBT_PODT +++++++++++++++++++ 
+// +++++++++++++++++++ TBT_PODT +++++++++++++++++++
 routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
   try {
     const client = new Client();
@@ -223,13 +226,13 @@ routeRouter.post("/updatePODT-PREPAIRSTATUS", async (req, res) => {
     var cPOCD = req.body.cPOCD;
     var iSEQ = req.body.iSEQ;
 
-     await client.query(
+    await client.query(
       `UPDATE "TBT_PODT" 
       SET 
       "cPREPAIRSTATUS" = $1,
       "iPREPAIRAMOUT" = $2
       WHERE "cPOCD" IN ( $3 ) AND  "iSEQ" IN($4)`,
-      [cPREPAIRSTATUS,iPREPAIRAMOUT,cPOCD,iSEQ]
+      [cPREPAIRSTATUS, iPREPAIRAMOUT, cPOCD, iSEQ]
     );
 
     await client.end();
@@ -249,7 +252,7 @@ routeRouter.post("/updatePODT-PREPAIRSTATUS", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ TBT_POHD +++++++++++++++++++ 
+// +++++++++++++++++++ TBT_POHD +++++++++++++++++++
 routeRouter.post("/updatePOHD-PREPAIRCFSTATUS", async (req, res) => {
   try {
     const client = new Client();
@@ -265,13 +268,13 @@ routeRouter.post("/updatePOHD-PREPAIRCFSTATUS", async (req, res) => {
     var iBASKETTOTAL = req.body.iBASKETTOTAL;
     var cPOCD = req.body.cPOCD;
 
-     await client.query(
+    await client.query(
       `UPDATE "TBT_POHD" 
       SET 
       "cPREPAIRCFSTATUS" = $1,
       "iBASKETTOTAL" = $2
       WHERE "cPOCD" IN ( $3 )`,
-      [cPREPAIRCFSTATUS,iBASKETTOTAL,cPOCD]
+      [cPREPAIRCFSTATUS, iBASKETTOTAL, cPOCD]
     );
 
     await client.end();
@@ -334,26 +337,25 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
 
     // TBT_POPREPAIRDT
     var iSEQ = 1;
-    var cSTATUSDT = 'Y';
-    var cPRODCD = '';
-    var cPRODNM = '';
-    var cBRNDCD = '';
-    var cBRNDNM = '';
+    var cSTATUSDT = "Y";
+    var cPRODCD = "";
+    var cPRODNM = "";
+    var cBRNDCD = "";
+    var cBRNDNM = "";
     var iSSIZEQTY = 0;
     var iMSIZEQTY = 0;
     var iLSIZEQTY = 0;
-    var cPROMO = '';
+    var cPROMO = "";
     var iDISCOUNT = 0;
-    var cDISCOUNT = '';
+    var cDISCOUNT = "";
     var iFREE = 0;
     var iTOTAL = iSUMTOTAL;
-    var cBASKCD = '';
-    var cBASKNM = '';
-    var cINSERTYPE = 'A';
+    var cBASKCD = "";
+    var cBASKNM = "";
+    var cINSERTYPE = "A";
     var iSUNITPRICET = 0;
     var iMUNITPRICE = 0;
     var iLUNITPRICE = 0;
-
 
     await client.query(
       `INSERT INTO "TBT_POPREPAIRHD"
@@ -628,24 +630,24 @@ routeRouter.post("/addPOPREPAIRDT", async (req, res) => {
     var cCREABY = createBy;
     var dUPDADT = dateNow;
     var cUPDABY = createBy;
-    var cINSERTYPE = 'M';
+    var cINSERTYPE = "M";
     var iSUNITPRICET = req.body.iSUNITPRICET;
     var iMUNITPRICE = req.body.iMUNITPRICE;
     var iLUNITPRICE = req.body.iLUNITPRICE;
 
     // TBT_POPREPAIRHD
     var dDATE = dateNow;
-    var cSTATUSHD = '2';
-    var cBRANCD = '';
-    var cGRPCD = '';
-    var cRTECD = '';
-    var cVEHICD = '';
-    var cDRIVER = '';
-    var cPLATE = '';
-    var cPROVINCE = '';
+    var cSTATUSHD = "2";
+    var cBRANCD = "";
+    var cGRPCD = "";
+    var cRTECD = "";
+    var cVEHICD = "";
+    var cDRIVER = "";
+    var cPLATE = "";
+    var cPROVINCE = "";
     var iCAP = 0;
     var iWEIGHT = 0;
-    var cCUSTCD = '';
+    var cCUSTCD = "";
     var iDPBASKET = 0;
     var iPAID = 0;
 
@@ -822,10 +824,9 @@ routeRouter.post("/updatePOPREPAIRDT", async (req, res) => {
         iSUNITPRICET,
         iMUNITPRICE,
         iLUNITPRICE,
-        cPOCD
+        cPOCD,
       ]
     );
-
 
     await client.end();
     const result = {
@@ -844,7 +845,7 @@ routeRouter.post("/updatePOPREPAIRDT", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ TBM_CUSTOMER_DT +++++++++++++++++++ 
+// +++++++++++++++++++ TBM_CUSTOMER_DT +++++++++++++++++++
 routeRouter.post("/getLocationOfStore", async (req, res) => {
   try {
     const client = new Client();
@@ -879,7 +880,7 @@ routeRouter.post("/getLocationOfStore", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ route of driver in today +++++++++++++++++++ 
+// +++++++++++++++++++ route of driver in today +++++++++++++++++++
 routeRouter.post("/getRouteToday", async (req, res) => {
   try {
     const client = new Client();
@@ -905,12 +906,84 @@ routeRouter.post("/getRouteToday", async (req, res) => {
        WHERE VE."cVEHINM" = $1 AND 
        VE."cPLATE" = $2AND 
        RO."cRTENM" LIKE $3`,
-      [cVEHINM,cPLATE,cRTENM]
+      [cVEHINM, cPLATE, cRTENM]
     );
 
     await client.end();
 
     res.json(result.rows[0]);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ PO check in +++++++++++++++++++
+routeRouter.post("/addPOCheckIn", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cPOCD = req.body.cPOCD;
+    var iCHELAT = req.body.iCHELAT;
+    var iCHELNG = req.body.iCHELNG;
+    var cCREABY = req.body.cCREABY;
+
+    var poRepeat = false;
+
+    const checkInList = await client.query(
+      `SELECT "cPOCD" FROM "TBT_PO_CHECKIN"`
+    );
+    for (var i = 0; i < checkInList.rows.length; i++) {
+      if (checkInList.rows[i].cPOCD == cPOCD) {
+        poRepeat = true;
+      }
+    }
+
+    if (poRepeat == false) {
+      const result = await client.query(
+        `INSERT INTO "TBT_PO_CHECKIN" 
+        ("cGUID","cPOCD","iCHELAT","iCHELNG","cCREABY","cUPDABY","dCREADT","dUPDADT")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [uuid, cPOCD, iCHELAT, iCHELNG, cCREABY, cCREABY, dateTime, dateTime]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "check in success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const result = await client.query(
+        `UPDATE "TBT_PO_CHECKIN" 
+        SET "iCHELAT" = $1,"iCHELNG" = $2,"cUPDABY" = $3,"dUPDADT"= $4
+        WHERE "cPOCD" = $5`,
+        [iCHELAT, iCHELNG, cCREABY, dateTime, cPOCD]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "check in success",
+        result: null,
+      };
+      res.json(message);
+    }
   } catch (err) {
     const result = {
       success: false,
