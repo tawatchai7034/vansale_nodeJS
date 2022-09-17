@@ -62,7 +62,7 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
       CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
       CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
       CHD."cISBASKET",CHD."cSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
-      CHD."cUPDABY",CHD."cDISTANCS",RD."cGRPCD",RD."cRTECD",DT."cISPHOTO",DT."cPHOTO_SERV",
+      CHD."cUPDABY",DT."cDISTANCS",RD."cGRPCD",RD."cRTECD",DT."cISPHOTO",DT."cPHOTO_SERV",
       DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
       DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cASSET",
       DT."cLATITUDE",DT."cLONGTITUDE",
@@ -108,13 +108,13 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
     var pocd = req.body.pocd;
 
     const result = await client.query(
-      `SELECT HD."cCUSTCD",HD."cPOCD",count(DT.*) AS iItems ,
+      `SELECT HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",count(DT.*) AS iItems ,
       count(DT."cBASKCD")AS iBasket,
       DT."iTOTAL"   
       FROM "TBT_POHD" HD
       INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
       WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2
-      GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cBASKCD",DT."iTOTAL"
+      GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."iTOTAL"
       ORDER BY  DT."iTOTAL" DESC`,
       [custcd, pocd]
     );
@@ -155,7 +155,7 @@ routeRouter.post("/getPOCD", async (req, res) => {
       GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cBASKCD",DT."iTOTAL"
       ORDER BY HD."dPODATE" DESC
       LIMIT 1`,
-      [cCUSTCD,dSHIPDATE]
+      [cCUSTCD, dSHIPDATE]
     );
 
     await client.end();
@@ -186,11 +186,12 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
 
     const result = await client.query(
       `SELECT DT."cGUID",DT."cPOCD",DT."iSEQ",DT."cPRODCD",DT."cPRODNM",DT."cBRNDCD",
-      DT."cBRNDNM",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cPROMO",DT."iDISCOUNT",
+      DT."cBRNDNM",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cSUOMNM",DT."cMUOMNM",DT."cLUOMNM"
+      ,DT."cPROMO",DT."iDISCOUNT",
       DT."cDISCOUNT",DT."iFREE",DT."iTOTAL",DT."cBASKCD",DT."cBASKNM",DT."cSTATUS",
       DT."dCREADT",DT."cCREABY",DT."dUPDADT",DT."cUPDABY",DT."cINSERTYPE",DT."iSUNITPRICE",
       DT."iMUNITPRICE",DT."iLUNITPRICE",DT."cPREPAIRSTATUS",DT."iPREPAIRAMOUT",
-      PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",PRO."cPHOTO_NM"
+      PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",DT."iNETTOTAL",DT."iINCOMPRO",DT."iCANCLEPRO",DT."iLOSSPRO"
       FROM "TBT_PODT" AS DT 
       LEFT JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD" = PRO."cPRODCD"
       WHERE DT."cPOCD"= $1`,
@@ -984,6 +985,86 @@ routeRouter.post("/addPOCheckIn", async (req, res) => {
       };
       res.json(message);
     }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ update PO Incomplete Cancle Loss product +++++++++++++++++++
+routeRouter.post("/updateICLPro", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cPOCD = req.body.cPOCD;
+    var iSEQ = req.body.iSEQ;
+    var iINCOMPRO = req.body.iINCOMPRO;
+    var iCANCLEPRO = req.body.iCANCLEPRO;
+    var iLOSSPRO = req.body.iLOSSPRO;
+    var cUPDABY = req.body.cUPDABY;
+    var price = 0.0;
+
+    const oldResult = await client.query(
+      `SELECT *
+      FROM "TBT_PODT"  
+      WHERE "cPOCD" = $1 AND "iSEQ"= $2 `,
+      [cPOCD, iSEQ]
+    );
+
+    if (oldResult.rows[0].iSSIZEQTY != 0.0) {
+      price = oldResult.rows[0].iSUNITPRICE;
+    } else if (oldResult.rows[0].iMSIZEQTY != 0.0) {
+      price = oldResult.rows[0].iMUNITPRICE;
+    } else if (oldResult.rows[0].iLSIZEQTY != 0.0) {
+      price = oldResult.rows[0].iLUNITPRICE;
+    }
+
+    var iNETTOTAL =
+      oldResult.rows[0].iNETTOTAL -
+      iLOSSPRO * price -
+      iINCOMPRO * price -
+      iCANCLEPRO * price;
+
+    if (iINCOMPRO == 0 && iCANCLEPRO == 0 && iLOSSPRO == 0) {
+      iNETTOTAL = oldResult.rows[0].iTOTAL;
+    }
+
+    const result = await client.query(
+      `UPDATE "TBT_PODT" SET "iNETTOTAL" = $4 ,"iLOSSPRO" = $1 ,
+      "dUPDADT"= $5 ,"cUPDABY"= $6, "iINCOMPRO"= $7, "iCANCLEPRO"= $8
+      WHERE "cPOCD" = $2 AND "iSEQ"= $3`,
+      [
+        iLOSSPRO,
+        cPOCD,
+        iSEQ,
+        iNETTOTAL,
+        dateTime,
+        cUPDABY,
+        iINCOMPRO,
+        iCANCLEPRO,
+      ]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
   } catch (err) {
     const result = {
       success: false,
