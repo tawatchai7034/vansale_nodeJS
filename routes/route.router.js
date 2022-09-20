@@ -118,7 +118,7 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
       WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2 AND  DT."cPRODNM" LIKE $3 AND  DT."cPRODCD" LIKE $4
       GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."iTOTAL"
       ORDER BY  DT."iTOTAL" DESC`,
-      [custcd, pocd,cPRODNM,cPRODCD]
+      [custcd, pocd, cPRODNM, cPRODCD]
     );
 
     await client.end();
@@ -199,7 +199,7 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
       FROM "TBT_PODT" AS DT 
       LEFT JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD" = PRO."cPRODCD"
       WHERE DT."cPOCD"= $1 AND  DT."cPRODNM" LIKE $2 AND  DT."cPRODCD" LIKE $3`,
-      [cPOCD,cPRODNM,cPRODCD ]
+      [cPOCD, cPRODNM, cPRODCD]
     );
 
     await client.end();
@@ -1069,6 +1069,90 @@ routeRouter.post("/updateICLPro", async (req, res) => {
       result: null,
     };
     res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ update PO return product +++++++++++++++++++
+routeRouter.post("/addRTPRO", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cCUSTCD = req.body.cCUSTCD;
+    var cPOCD = req.body.cPOCD;
+    var iQTY = req.body.iQTY;
+    var iTOTAL = req.body.iTOTAL;
+    var cSTATUS = req.body.cSTATUS;
+    var cRTS = req.body.cRTS;
+    var cCREABY = req.body.cCREABY;
+    var cPRODCD = req.body.cPRODCD;
+
+    const oldResult = await client.query(
+      `SELECT *
+      FROM "TBT_PO_RTPRO"  
+      WHERE "cCUSTCD" = $1 AND "cPRODCD"= $2 `,
+      [cCUSTCD, cPRODCD]
+    );
+
+    if (oldResult.rows.length > 0) {
+      const result = await client.query(
+        `UPDATE "TBT_PO_RTPRO" 
+    SET "iQTY"= $3,"iTOTAL" = $4,"cSTATUS" = $5,"cRTS" = $6 ,"cUPDABY" = $7,"dUPDADT"=$8
+    WHERE "cCUSTCD" = $1 AND "cPRODCD" = $2`,
+        [cCUSTCD, cPRODCD, iQTY, iTOTAL, cSTATUS, cRTS, cCREABY, dateTime]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const result = await client.query(
+        `INSERT INTO "TBT_PO_RTPRO" ("cGUID","cPOCD","cCUSTCD","cPRODCD","iQTY","iTOTAL","cSTATUS","cRTS","cCREABY","cUPDABY","dCREADT","dUPDADT")
+        VALUEs ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+        [
+          uuid,
+          cPOCD,
+          cCUSTCD,
+          cPRODCD,
+          iQTY,
+          iTOTAL,
+          cSTATUS,
+          cRTS,
+          cCREABY,
+          cCREABY,
+          dateTime,
+          dateTime,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
   } catch (err) {
     const result = {
       success: false,
