@@ -106,6 +106,8 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
 
     var custcd = req.body.custcd;
     var pocd = req.body.pocd;
+    var cPRODNM = req.body.cPRODNM;
+    var cPRODCD = req.body.cPRODCD;
 
     const result = await client.query(
       `SELECT HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",count(DT.*) AS iItems ,
@@ -113,10 +115,10 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
       DT."iTOTAL"   
       FROM "TBT_POHD" HD
       INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
-      WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2
+      WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2 AND  DT."cPRODNM" LIKE $3 AND  DT."cPRODCD" LIKE $4
       GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."iTOTAL"
       ORDER BY  DT."iTOTAL" DESC`,
-      [custcd, pocd]
+      [custcd, pocd,cPRODNM,cPRODCD]
     );
 
     await client.end();
@@ -183,6 +185,8 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
       }
     });
     var cPOCD = req.body.cPOCD;
+    var cPRODNM = req.body.cPRODNM;
+    var cPRODCD = req.body.cPRODCD;
 
     const result = await client.query(
       `SELECT DT."cGUID",DT."cPOCD",DT."iSEQ",DT."cPRODCD",DT."cPRODNM",DT."cBRNDCD",
@@ -194,8 +198,8 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
       PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",DT."iNETTOTAL",DT."iINCOMPRO",DT."iCANCLEPRO",DT."iLOSSPRO"
       FROM "TBT_PODT" AS DT 
       LEFT JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD" = PRO."cPRODCD"
-      WHERE DT."cPOCD"= $1`,
-      [cPOCD]
+      WHERE DT."cPOCD"= $1 AND  DT."cPRODNM" LIKE $2 AND  DT."cPRODCD" LIKE $3`,
+      [cPOCD,cPRODNM,cPRODCD ]
     );
 
     await client.end();
@@ -1032,7 +1036,7 @@ routeRouter.post("/updateICLPro", async (req, res) => {
     }
 
     var iNETTOTAL =
-      oldResult.rows[0].iNETTOTAL -
+      oldResult.rows[0].iTOTAL -
       iLOSSPRO * price -
       iINCOMPRO * price -
       iCANCLEPRO * price;
