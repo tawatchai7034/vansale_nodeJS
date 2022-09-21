@@ -1097,7 +1097,6 @@ routeRouter.post("/addRTPRO", async (req, res) => {
     var iQTY = req.body.iQTY;
     var iTOTAL = req.body.iTOTAL;
     var cSTATUS = req.body.cSTATUS;
-    var cRTS = req.body.cRTS;
     var cCREABY = req.body.cCREABY;
     var cPRODCD = req.body.cPRODCD;
 
@@ -1109,11 +1108,30 @@ routeRouter.post("/addRTPRO", async (req, res) => {
     );
 
     if (oldResult.rows.length > 0) {
+      let rts;
+      if (
+        parseInt(oldResult.rows[0].cRTS) > 0 &&
+        parseInt(oldResult.rows[0].cRTS) < 5
+      ) {
+        rts = parseInt(oldResult.rows[0].cRTS) + 1;
+      } else {
+        rts = parseInt(oldResult.rows[0].cRTS);
+      }
+
       const result = await client.query(
         `UPDATE "TBT_PO_RTPRO" 
     SET "iQTY"= $3,"iTOTAL" = $4,"cSTATUS" = $5,"cRTS" = $6 ,"cUPDABY" = $7,"dUPDADT"=$8
     WHERE "cCUSTCD" = $1 AND "cPRODCD" = $2`,
-        [cCUSTCD, cPRODCD, iQTY, iTOTAL, cSTATUS, cRTS, cCREABY, dateTime]
+        [
+          cCUSTCD,
+          cPRODCD,
+          iQTY,
+          iTOTAL,
+          cSTATUS,
+          rts.toString(),
+          cCREABY,
+          dateTime,
+        ]
       );
 
       await client.end();
@@ -1135,8 +1153,8 @@ routeRouter.post("/addRTPRO", async (req, res) => {
           cPRODCD,
           iQTY,
           iTOTAL,
-          cSTATUS,
-          cRTS,
+          "N",
+          "1",
           cCREABY,
           cCREABY,
           dateTime,
@@ -1153,6 +1171,263 @@ routeRouter.post("/addRTPRO", async (req, res) => {
       };
       res.json(message);
     }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ update PO return product +++++++++++++++++++
+routeRouter.post("/unbanRTPRO", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cCUSTCD = req.body.cCUSTCD;
+    var cCREABY = req.body.cCREABY;
+    var cPRODCD = req.body.cPRODCD;
+
+    const result = await client.query(
+      `UPDATE "TBT_PO_RTPRO" 
+    SET "iQTY"= $3,"iTOTAL" = $4,"cSTATUS" = $5,"cRTS" = $6 ,"cUPDABY" = $7,"dUPDADT"=$8
+    WHERE "cCUSTCD" = $1 AND "cPRODCD" = $2`,
+      [cCUSTCD, cPRODCD, 0, 0.0, "Y", "3", cCREABY, dateTime]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ update PO loss product +++++++++++++++++++
+routeRouter.post("/addLOSSPRO", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cCUSTCD = req.body.cCUSTCD;
+    var cPOCD = req.body.cPOCD;
+    var iQTY = req.body.iQTY;
+    var iTOTAL = req.body.iTOTAL;
+    var cCREABY = req.body.cCREABY;
+    var cIB64 = req.body.cIB64;
+
+    const oldResult = await client.query(
+      `SELECT *
+      FROM "TBT_PO_LOSSPRO" 
+      WHERE "cCUSTCD" = $1 AND "cPOCD"= $2`,
+      [cCUSTCD, cPOCD]
+    );
+
+    if (oldResult.rows.length > 0) {
+      const result = await client.query(
+        `UPDATE "TBT_PO_LOSSPRO" 
+    SET "iQTY"= $3,
+    "iTOTAL" = $4,
+    "cIB64" = $5,
+    "cUPDABY" = $6,
+    "dUPDADT"=$7
+    WHERE "cCUSTCD" = $1 AND "cPOCD" = $2`,
+        [cCUSTCD, cPOCD, iQTY, iTOTAL, cIB64, cCREABY, dateTime]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const result = await client.query(
+        `INSERT INTO "TBT_PO_LOSSPRO" 
+        ("cGUID","cPOCD","cCUSTCD","iQTY","iTOTAL","cIB64","cCREABY","cUPDABY","dCREADT","dUPDADT")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          uuid,
+          cPOCD,
+          cCUSTCD,
+          iQTY,
+          iTOTAL,
+          cIB64,
+          cCREABY,
+          cCREABY,
+          dateTime,
+          dateTime,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+
+// +++++++++++++++++++ add basket return +++++++++++++++++++
+routeRouter.post("/addBKR", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cCUSTCD = req.body.cCUSTCD;
+    var cPOCD = req.body.cPOCD;
+    var iQTY = req.body.iQTY;
+    var iTOTAL = req.body.iTOTAL;
+    var cCREABY = req.body.cCREABY;
+    var cBASKCD = req.body.cBASKCD;
+
+    const oldResult = await client.query(
+      `SELECT *
+      FROM "TBT_BASKET_RETURN" 
+      WHERE "cCUSTCD" = $1 AND "cPOCD" = $2 AND "cBASKCD" = $3`,
+      [cCUSTCD, cPOCD, cBASKCD]
+    );
+
+    if (oldResult.rows.length > 0) {
+      const result = await client.query(
+        `UPDATE "TBT_BASKET_RETURN" 
+    SET "iQTY"= $4,
+    "iTOTAL" = $5,
+    "cUPDABY" = $6,
+    "dUPDADT"=$7,
+    "dREDATE"=$8
+    WHERE "cCUSTCD" = $1 AND "cPOCD" = $2 AND "cBASKCD" = $3`,
+        [cCUSTCD, cPOCD, cBASKCD, iQTY, iTOTAL, cCREABY, dateTime, dateTime]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      if (iQTY != 0) {
+        const result = await client.query(
+          `INSERT INTO "TBT_BASKET_RETURN" 
+          ("cGUID","cPOCD","cCUSTCD","cBASKCD","dREDATE","iQTY","iTOTAL","cCREABY","cUPDABY","dCREADT","dUPDADT") 
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [
+            uuid,
+            cPOCD,
+            cCUSTCD,
+            cBASKCD,
+            dateTime,
+            iQTY,
+            iTOTAL,
+            cCREABY,
+            cCREABY,
+            dateTime,
+            dateTime,
+          ]
+        );
+
+        await client.end();
+
+        const message = {
+          success: true,
+          message: "success",
+          result: null,
+        };
+        res.json(message);
+      }else{
+        const message = {
+          success: true,
+          message: "QTY is 0",
+          result: null,
+        };
+        res.json(message);
+      }
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ basket search  +++++++++++++++++++
+routeRouter.post("/searchBasket", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBASKNM = req.body.cBASKNM;
+    var cBASKCD = req.body.cBASKCD;
+
+    const oldResult = await client.query(
+      `SELECT * FROM "TBM_BASKET" WHERE "cBASKNM" LIKE $1 AND "cBASKCD" LIKE $2`,
+      [cBASKNM, cBASKCD]
+    );
+
+    await client.end();
+
+    res.json(oldResult.rows);
   } catch (err) {
     const result = {
       success: false,
