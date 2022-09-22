@@ -1308,7 +1308,6 @@ routeRouter.post("/addLOSSPRO", async (req, res) => {
   }
 });
 
-
 // +++++++++++++++++++ add basket return +++++++++++++++++++
 routeRouter.post("/addBKR", async (req, res) => {
   try {
@@ -1385,7 +1384,7 @@ routeRouter.post("/addBKR", async (req, res) => {
           result: null,
         };
         res.json(message);
-      }else{
+      } else {
         const message = {
           success: true,
           message: "QTY is 0",
@@ -1427,6 +1426,85 @@ routeRouter.post("/searchBasket", async (req, res) => {
 
     await client.end();
 
+    res.json(oldResult.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ mobile payment  +++++++++++++++++++
+routeRouter.post("/mobilePayment", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var iPAID = req.body.iPAID;
+    var cREMARK = req.body.cREMARK;
+    var iBASKETTOTAL = req.body.iBASKETTOTAL;
+    var cPOCD = req.body.cPOCD;
+    var cCUSTCD = req.body.cCUSTCD;
+    var cUPDABY = req.body.cUPDABY;
+
+    const oldResult = await client.query(
+      `UPDATE "TBT_POHD" 
+      SET "cPOSTATUS" = '4',"iPAID" = $1,"cREMARK"= $2,
+      "iBASKETTOTAL"= $3,"cUPDABY"= $6,"dUPDADT"=$7
+      WHERE "cPOCD" = $4 AND "cCUSTCD" = $5`,
+      [iPAID, cREMARK, iBASKETTOTAL, cPOCD, cCUSTCD, cUPDABY, dateTime]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ get product type  +++++++++++++++++++
+routeRouter.get("/getProType", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    const oldResult = await client.query(`SELECT * FROM "TBM_PRODUCT_TYPE"`);
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
     res.json(oldResult.rows);
   } catch (err) {
     const result = {
