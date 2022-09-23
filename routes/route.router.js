@@ -56,17 +56,18 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
 
     var id = req.body.id;
     var shippingDate = req.body.dSHIPDATE;
+    var cGRPCD = req.body.cGRPCD;
 
     const result = await client.query(
       `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
       CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
       CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
-      CHD."cISBASKET",CHD."cSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
-      CHD."cUPDABY",DT."cDISTANCS",RD."cGRPCD",RD."cRTECD",DT."cISPHOTO",DT."cPHOTO_SERV",
-      DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
-      DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cASSET",
+      CHD."cISBASKET",CHD."cSTATUS",RD."cGRPCD",RD."cRTECD",RD."iSEQROUTE",DT."cISPHOTO",DT."cPHOTO_SERV",
+          DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cDISTRICT",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
+      DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cDISTANCS",DT."cASSET",
       DT."cLATITUDE",DT."cLONGTITUDE",
-      HD."cPREPAIRCFSTATUS",HD."cPOSTATUS"
+      HD."cPREPAIRCFSTATUS",HD."cPOSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
+      CHD."cUPDABY"
       FROM "TBM_CUSTOMER_HD" AS CHD
           INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
           ON CHD."cCUSTCD" = RD."cCUSTCD"
@@ -74,8 +75,8 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
           ON DT."cCUSTCD" = RD."cCUSTCD"
           LEFT JOIN "TBT_POHD" AS HD
           ON CHD."cCUSTCD" = HD."cCUSTCD"
-          WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2`,
-      [id, shippingDate]
+          WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2 AND RD."cGRPCD" = $3`,
+      [id, shippingDate, cGRPCD]
     );
 
     await client.end();
@@ -903,7 +904,7 @@ routeRouter.post("/getRouteToday", async (req, res) => {
     var cRTENM = req.body.cRTENM;
 
     const result = await client.query(
-      `SELECT RO."cRTECD","cRTENM" FROM "TBM_VEHICLE" AS VE
+      `SELECT MR."cGRPCD", RO."cRTECD","cRTENM" FROM "TBM_VEHICLE" AS VE
       INNER JOIN "TBM_MAP_ROUTE" AS MR
        ON MR."cVEHICD" = VE."cVEHICD"
       INNER  JOIN "TBM_ROUTE" AS RO
@@ -1506,6 +1507,95 @@ routeRouter.get("/getProType", async (req, res) => {
       result: null,
     };
     res.json(oldResult.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ iSEQ route  +++++++++++++++++++
+routeRouter.post("/updateiSEQROUTE", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cCUSTCD = req.body.cCUSTCD;
+    var iSEQROUTE = req.body.iSEQROUTE;
+    var cUPDABY = req.body.cUPDABY;
+    var cGRPCD = req.body.cGRPCD;
+    var cRTECD = req.body.cRTECD;
+
+    var num;
+    if (iSEQROUTE == "") {
+      num = 0;
+    }else{
+      num = iSEQROUTE
+    }
+    const oldResult = await client.query(
+      `
+    UPDATE "TBM_CUSTOMER_ROUTE" 
+    SET "iSEQROUTE" = $3,"cUPDABY"=$4 ,"dUPDADT"=$2
+    WHERE "cCUSTCD" = $1 AND "cGRPCD" = $5 AND "cRTECD" = $6`,
+      [cCUSTCD, dateTime, num, cUPDABY, cGRPCD, cRTECD]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ PO start delivery  +++++++++++++++++++
+routeRouter.post("/deliveryPO", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cPOCD = req.body.cPOCD;
+    var cUPDABY = req.body.cUPDABY;
+
+    const oldResult = await client.query(
+      `
+      UPDATE "TBT_POHD" SET "cPOSTATUS" = '3',"cUPDABY"=$2,"dUPDADT"=$3 WHERE "cPOCD" = $1`,
+      [cPOCD, cUPDABY, dateTime]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
   } catch (err) {
     const result = {
       success: false,
