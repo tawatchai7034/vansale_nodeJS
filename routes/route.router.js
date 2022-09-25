@@ -54,9 +54,10 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
       }
     });
 
-    var id = req.body.id;
+    var cRTECD = req.body.cRTECD;
     var shippingDate = req.body.dSHIPDATE;
     var cGRPCD = req.body.cGRPCD;
+    var cBRANCD = req.body.cBRANCD;
 
     const result = await client.query(
       `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
@@ -75,8 +76,8 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
           ON DT."cCUSTCD" = RD."cCUSTCD"
           LEFT JOIN "TBT_POHD" AS HD
           ON CHD."cCUSTCD" = HD."cCUSTCD"
-          WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2 AND RD."cGRPCD" = $3`,
-      [id, shippingDate, cGRPCD]
+          WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2 AND RD."cGRPCD" = $3 AND HD."cBRANCD" = $4`,
+      [cRTECD, shippingDate, cGRPCD, cBRANCD]
     );
 
     await client.end();
@@ -904,7 +905,7 @@ routeRouter.post("/getRouteToday", async (req, res) => {
     var cRTENM = req.body.cRTENM;
 
     const result = await client.query(
-      `SELECT MR."cGRPCD", RO."cRTECD","cRTENM" FROM "TBM_VEHICLE" AS VE
+      `SELECT  MR."cBRANCD",MR."cGRPCD", RO."cRTECD","cRTENM" FROM "TBM_VEHICLE" AS VE
       INNER JOIN "TBM_MAP_ROUTE" AS MR
        ON MR."cVEHICD" = VE."cVEHICD"
       INNER  JOIN "TBM_ROUTE" AS RO
@@ -1538,8 +1539,8 @@ routeRouter.post("/updateiSEQROUTE", async (req, res) => {
     var num;
     if (iSEQROUTE == "") {
       num = 0;
-    }else{
-      num = iSEQROUTE
+    } else {
+      num = iSEQROUTE;
     }
     const oldResult = await client.query(
       `
@@ -1596,6 +1597,241 @@ routeRouter.post("/deliveryPO", async (req, res) => {
       result: null,
     };
     res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ get arrange product +++++++++++++++++++
+routeRouter.post("/getArrangePro", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cGRPCD = req.body.cGRPCD;
+    var cRTECD = req.body.cRTECD;
+    var cBRANCD = req.body.cBRANCD;
+
+    const oldResult = await client.query(
+      `
+      SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
+		CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
+		CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
+		CHD."cISBASKET",CHD."cSTATUS",RD."cGRPCD",RD."cRTECD",RD."iSEQROUTE",DT."cISPHOTO",DT."cPHOTO_SERV",
+        DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cDISTRICT",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
+		DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cDISTANCS",DT."cASSET",
+		DT."cLATITUDE",DT."cLONGTITUDE",
+		HD."cPREPAIRCFSTATUS",HD."cPOSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
+		CHD."cUPDABY"
+		FROM "TBM_CUSTOMER_HD" AS CHD
+        INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
+        ON CHD."cCUSTCD" = RD."cCUSTCD"
+        INNER JOIN "TBM_CUSTOMER_DT" AS DT
+        ON DT."cCUSTCD" = RD."cCUSTCD"
+        LEFT JOIN "TBT_POHD" AS HD
+        ON CHD."cCUSTCD" = HD."cCUSTCD"
+        WHERE RD."cRTECD" = $1  AND  RD."cGRPCD" = $2 AND HD."cBRANCD" = $3
+		  AND HD."cPOSTATUS" != '3' AND HD."cPOSTATUS" != '4'  AND HD."cPOSTATUS" != '5'
+		  AND HD."cPREPAIRCFSTATUS" != 'Y'`,
+      [cRTECD, cGRPCD, cBRANCD]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(oldResult.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ add send money +++++++++++++++++++
+routeRouter.post("/addSendMoney", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBRANCD = req.body.cBRANCD;
+    var cGRPCD = req.body.cGRPCD;
+    var cRTECD = req.body.cRTECD;
+    var cVEHICD = req.body.cVEHICD;
+    var iTOTAL = req.body.iTOTAL;
+    var cDRIVER = req.body.cDRIVER;
+    var iCOST = req.body.iCOST;
+    var cBILLPH = req.body.cBILLPH;
+    var cCOSTPH = req.body.cCOSTPH;
+    var cCREABY = req.body.cCREABY;
+    var cCOSNM = req.body.cCOSNM;
+    var cREMARK = req.body.cREMARK;
+    var money = 0;
+
+    if (iCOST == 0) {
+      money = iTOTAL;
+    } else {
+      money = iTOTAL - iCOST;
+    }
+
+    const oldResult = await client.query(
+      `SELECT *
+      FROM "TBT_SEND_MONEY"
+      WHERE "cBRANCD"= $1 AND "cGRPCD"=$2 AND "cRTECD"=$3 AND "cVEHICD"=$4`,
+      [cBRANCD, cGRPCD, cRTECD, cVEHICD]
+    );
+
+    if (oldResult.rows.length > 0) {
+      const result = await client.query(
+        `UPDATE "TBT_SEND_MONEY" 
+        SET "cDRIVER"= $5,"iTOTAL"= $6,"iCOST"=$7,"iNETTOTAL"=$8,"cBILLPH"=$9,"cCOSTPH"=$10,"cUPDABY"=$11,"dUPDADT" = NOW(), "cCOSNM" =$12, "cREMARK" = $13
+        WHERE "cBRANCD"= $1 AND "cGRPCD"= $2 AND "cRTECD"= $3 AND "cVEHICD"= $4`,
+        [
+          cBRANCD,
+          cGRPCD,
+          cRTECD,
+          cVEHICD,
+          cDRIVER,
+          iTOTAL,
+          iCOST,
+          money,
+          cBILLPH,
+          cCOSTPH,
+          cCREABY,
+          cCOSNM,
+          cREMARK,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const result = await client.query(
+        `INSERT INTO "TBT_SEND_MONEY" 
+        ("cGUID","cBRANCD","cGRPCD","cRTECD","cVEHICD","cDRIVER","iTOTAL","iCOST",
+        "iNETTOTAL","cBILLPH","cCOSTPH","cCREABY","cUPDABY","dCREADT","dUPDADT","cCOSNM", "cREMARK")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW(),NOW(),$14,$15)`,
+        [
+          uuid,
+          cBRANCD,
+          cGRPCD,
+          cRTECD,
+          cVEHICD,
+          cDRIVER,
+          iTOTAL,
+          iCOST,
+          money,
+          cBILLPH,
+          cCOSTPH,
+          cCREABY,
+          cCREABY,
+          cCOSNM,
+          cREMARK,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ get product type  +++++++++++++++++++
+routeRouter.post("/getSumMoney", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cRTECD = req.body.cRTECD;
+    var shippingDate = req.body.dSHIPDATE;
+    var cGRPCD = req.body.cGRPCD;
+    var cBRANCD = req.body.cBRANCD;
+
+    const oldResult = await client.query(
+      `
+    SELECT  SUM(a.TOTAL) FROM (
+      SELECT  SUM(PODT."iNETTOTAL") AS TOTAL , RD."cRTECD" AS cRTECD,RD."cGRPCD" AS cGRPCD, HD."cBRANCD" AS cBRANCD, HD."dSHIPDATE" AS dSHIPDATE
+          FROM "TBM_CUSTOMER_HD" AS CHD
+              INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
+              ON CHD."cCUSTCD" = RD."cCUSTCD"
+              INNER JOIN "TBM_CUSTOMER_DT" AS DT
+              ON DT."cCUSTCD" = RD."cCUSTCD"
+              LEFT JOIN "TBT_POHD" AS HD
+              ON CHD."cCUSTCD" = HD."cCUSTCD"
+              INNER JOIN "TBT_PODT" AS PODT
+              ON PODT."cPOCD" = HD."cPOCD"
+              WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2 AND RD."cGRPCD" = $3 AND HD."cBRANCD" = $4
+               GROUP BY PODT."iNETTOTAL",cRTECD,cGRPCD,cBRANCD,dSHIPDATE
+      ) a
+    `,
+      [cRTECD, shippingDate, cGRPCD, cBRANCD]
+    );
+
+    await client.end();
+    var data = {
+      cBRANCD: cBRANCD,
+      cGRPCD: cGRPCD,
+      cRTECD: cRTECD,
+      dSHIPDATE: shippingDate,
+      iTOTAL: oldResult.rows[0].sum,
+    };
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(data);
   } catch (err) {
     const result = {
       success: false,
