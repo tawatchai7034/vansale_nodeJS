@@ -112,13 +112,14 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
     var cPRODCD = req.body.cPRODCD;
 
     const result = await client.query(
-      `SELECT HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",count(DT.*) AS iItems ,
+      `SELECT HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",count(DT.*) AS iItems ,
       count(DT."cBASKCD")AS iBasket,
       DT."iTOTAL"   
       FROM "TBT_POHD" HD
       INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
+      INNER JOIN "TBM_PRODUCT" PR ON PR."cPRODCD" = DT."cPRODCD"
       WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2 AND  DT."cPRODNM" LIKE $3 AND  DT."cPRODCD" LIKE $4
-      GROUP BY  HD."cCUSTCD",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."iTOTAL"
+      GROUP BY  HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",DT."cBASKCD",DT."iTOTAL"
       ORDER BY  DT."iTOTAL" DESC`,
       [custcd, pocd, cPRODNM, cPRODCD]
     );
@@ -1779,7 +1780,7 @@ routeRouter.post("/addSendMoney", async (req, res) => {
   }
 });
 
-// +++++++++++++++++++ get product type  +++++++++++++++++++
+// +++++++++++++++++++ get total money in route  +++++++++++++++++++
 routeRouter.post("/getSumMoney", async (req, res) => {
   try {
     const client = new Client();
@@ -1832,6 +1833,292 @@ routeRouter.post("/getSumMoney", async (req, res) => {
       result: null,
     };
     res.json(data);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ get customer detail in route  +++++++++++++++++++
+routeRouter.post("/getStoreDetail", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cCUSTCD = req.body.cCUSTCD;
+
+    const oldResult = await client.query(
+      `SELECT * FROM "TBT_POHD" WHERE "cCUSTCD" = $1 ORDER BY "dSHIPDATE" DESC LIMIT 1
+    `,
+      [cCUSTCD]
+    );
+
+    const cancleResult = await client.query(
+      `SELECT * FROM "TBT_POHD" WHERE "cCUSTCD" = $1 and "cPOSTATUS" = '5' ORDER BY "dSHIPDATE" DESC LIMIT 1
+    `,
+      [cCUSTCD]
+    );
+
+    const creditResult = await client.query(
+      `SELECT * FROM "TBM_CUSTOMER_HD" WHERE "cCUSTCD" = $1 
+    `,
+      [cCUSTCD]
+    );
+
+    const moneyResult = await client.query(
+      `SELECT * FROM "TBT_POHD" WHERE "cCUSTCD" = $1  
+    `,
+      [cCUSTCD]
+    );
+
+    const PoTotalResult = await client.query(
+      `SELECT * FROM "TBT_POHD" WHERE "cPOCD" = $1  
+    `,
+      [oldResult.rows[0].cPOCD]
+    );
+
+    const basketResult = await client.query(
+      `SELECT HD."cCUSTCD",PR."cTYPE", HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",B."iPRICE" AS iBPU,count(DT.*) AS iItems ,
+      count(DT."cBASKCD")AS iBasket,
+      DT."iTOTAL"   
+      FROM "TBT_POHD" HD
+      INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
+      INNER JOIN "TBM_PRODUCT" PR ON PR."cPRODCD" = DT."cPRODCD"
+      INNER JOIN "TBM_BASKET" B ON DT."cBASKCD" = B."cBASKCD"
+      WHERE HD."cCUSTCD" = $1
+      GROUP BY  HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",B."iPRICE",DT."iTOTAL"
+      ORDER BY  DT."iTOTAL" DESC
+    `,
+      [cCUSTCD]
+    );
+
+    for (var i = 0; i < basketResult.length; i++) {
+      iTOTAL += Number(moneyResult.rows[i].iTOTAL);
+      iPAID += Number(moneyResult.rows[i].iPAID);
+    }
+
+    var cancleDate = "";
+    var succDate = "";
+    if (cancleResult.rows.length > 0) {
+      var date = new Date(cancleResult.rows[0].dSHIPDATE);
+
+      var year = date.toLocaleString("default", { year: "numeric" });
+      var month = date.toLocaleString("default", { month: "2-digit" });
+      var day = date.toLocaleString("default", { day: "2-digit" });
+
+      cancleDate = day + "-" + month + "-" + year;
+    }
+
+    if (oldResult.rows.length > 0) {
+      var date = new Date(oldResult.rows[0].dSHIPDATE);
+
+      var year = date.toLocaleString("default", { year: "numeric" });
+      var month = date.toLocaleString("default", { month: "2-digit" });
+      var day = date.toLocaleString("default", { day: "2-digit" });
+
+      succDate = day + "-" + month + "-" + year;
+    }
+    var iTOTAL = 0;
+    var iPAID = 0;
+    for (var i = 0; i < moneyResult.rows.length; i++) {
+      iTOTAL += Number(moneyResult.rows[i].iTOTAL);
+      iPAID += Number(moneyResult.rows[i].iPAID);
+    }
+
+    await client.end();
+
+    var data = {
+      cCUSTCD: oldResult.rows[0].cCUSTCD,
+      cPOCD: oldResult.rows[0].cPOCD,
+      iTOTAL: oldResult.rows[0].iTOTAL,
+      dSUCCDT: succDate,
+      dCANDT: cancleDate,
+      iCREDTERM: creditResult.rows[0].iCREDTERM.toString(),
+      iCREDLIM: creditResult.rows[0].iCREDLIM,
+      iTOTAL: iTOTAL,
+      iPAID: iPAID,
+      iPOTOTAL: PoTotalResult.rows[0].iTOTAL,
+    };
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(data);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ get history basket of customer +++++++++++++++++++
+routeRouter.post("/getHisBasket", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cCUSTCD = req.body.cCUSTCD;
+
+    const basketResult = await client.query(
+      `SELECT HD."cCUSTCD",PR."cTYPE", HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",B."iPRICE" AS iBPU,count(DT.*) AS iItems ,
+      count(DT."cBASKCD")AS iBasket,
+      DT."iTOTAL"   
+      FROM "TBT_POHD" HD
+      INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
+      INNER JOIN "TBM_PRODUCT" PR ON PR."cPRODCD" = DT."cPRODCD"
+      INNER JOIN "TBM_BASKET" B ON DT."cBASKCD" = B."cBASKCD"
+      WHERE HD."cCUSTCD" = $1
+      GROUP BY  HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",B."iPRICE",DT."iTOTAL"
+      ORDER BY  DT."iTOTAL" DESC
+    `,
+      [cCUSTCD]
+    );
+
+    const ReturnBasket = await client.query(
+      `SELECT * FROM "TBT_BASKET_RETURN" WHERE "cCUSTCD" = $1
+    `,
+      [cCUSTCD]
+    );
+
+    var basketList = [
+      ...new Set(basketResult.rows.map((item) => item.cBASKCD)),
+    ];
+
+    var ReBasketList = [
+      ...new Set(ReturnBasket.rows.map((item) => item.cBASKCD)),
+    ];
+    var basketData = [];
+    var ReBasketData = [];
+    var allBasketData = [];
+
+    for (var j = 0; j < basketList.length; j++) {
+      var item = 0;
+      var bpu = 0;
+      var name;
+      for (var i = 0; i < basketResult.rows.length; i++) {
+        if (basketList[j] === basketResult.rows[i].cBASKCD) {
+          item += Number(basketResult.rows[i].ibasket);
+          bpu = basketResult.rows[i].ibpu;
+          name = basketResult.rows[i].cBASKNM;
+          // console.log(basketResult.rows[i])
+        }
+      }
+      var data = {
+        cBASKCD: basketList[j],
+        cBASKNM: name,
+        iBPU: bpu,
+        iTOTAL: item,
+      };
+      basketData.push(data);
+    }
+
+    for (var i = 0; i < ReBasketList.length; i++) {
+      var item = 0;
+      for (var j = 0; j < ReturnBasket.rows.length; j++) {
+        if (ReBasketList[i] === ReturnBasket.rows[j].cBASKCD) {
+          item += Number(ReturnBasket.rows[j].iQTY);
+          // console.log(basketResult.rows[i])
+        }
+      }
+
+      var data = {
+        cBASKCD: ReBasketList[i],
+        iTOTAL: item,
+      };
+      ReBasketData.push(data);
+    }
+
+    for (var i = 0; i < basketData.length; i++) {
+      var total = 0;
+      for (var j = 0; j < ReBasketData.length; j++) {
+        if (basketData[i].cBASKCD === ReBasketData[j].cBASKCD) {
+          total = ReBasketData[j].iTOTAL;
+        }
+      }
+      var data = {
+        cBASKCD: basketData[i].cBASKCD,
+        cBASKNM: basketData[i].cBASKNM,
+        iBPU: basketData[i].iBPU,
+        iTOTAL: basketData[i].iTOTAL,
+        iRETURN: total,
+      };
+
+      allBasketData.push(data);
+    }
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(allBasketData);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+
+// +++++++++++++++++++ get history product of customer +++++++++++++++++++
+routeRouter.post("/getHisProduct", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cCUSTCD = req.body.cCUSTCD;
+
+
+    const oldResult = await client.query(
+      `SELECT DISTINCT ON (DT."cPRODCD") PRO."cPRODCD",PRO."cPRODNM",PRO."cTYPE",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cSUOMCD",
+      DT."cSUOMNM",DT."cMUOMCD",DT."cMUOMNM",DT."cLUOMCD",DT."cLUOMNM" ,DT."iSUNITPRICE",DT."iMUNITPRICE",DT."iLUNITPRICE"
+      FROM   "TBT_PODT" AS DT
+      INNER JOIN "TBT_POHD" AS HD ON HD."cPOCD" = DT."cPOCD"
+      INNER JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD"= PRO."cPRODCD"
+      WHERE HD."cCUSTCD" = $1`,
+      [cCUSTCD]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(oldResult.rows);
   } catch (err) {
     const result = {
       success: false,
