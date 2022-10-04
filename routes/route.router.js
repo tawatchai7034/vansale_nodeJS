@@ -3,6 +3,10 @@ let express = require("express");
 let routeRouter = express.Router();
 const crypto = require("crypto");
 const { Client } = require("pg");
+const bodyParser = require("body-parser");
+const fs = require("fs");
+const date = require("date-and-time");
+var uploader = require("base64-image-upload");
 
 let dateTime = new Date().toJSON();
 var uuid = `${crypto.randomUUID()}`;
@@ -20,12 +24,13 @@ routeRouter.post("/getRoute", async (req, res) => {
       }
     });
 
-    var name = req.body.name;
+    var cRTENM = req.body.cRTENM;
+    var cBRANCD = req.body.cBRANCD;
 
     const result = await client.query(
       `SELECT * FROM "TBM_ROUTE" 
-        WHERE "TBM_ROUTE"."cRTENM" LIKE $1`,
-      [name]
+        WHERE "TBM_ROUTE"."cRTENM" LIKE $1 AND "cBRANCD" = $2`,
+      [cRTENM, cBRANCD]
     );
 
     await client.end();
@@ -58,31 +63,60 @@ routeRouter.post("/getRouteTransfers", async (req, res) => {
     var shippingDate = req.body.dSHIPDATE;
     var cGRPCD = req.body.cGRPCD;
     var cBRANCD = req.body.cBRANCD;
+    var cUSEDT = req.body.cUSEDT;
 
-    const result = await client.query(
-      `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
-      CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
-      CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
-      CHD."cISBASKET",CHD."cSTATUS",RD."cGRPCD",RD."cRTECD",RD."iSEQROUTE",DT."cISPHOTO",DT."cPHOTO_SERV",
-          DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cDISTRICT",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
-      DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cDISTANCS",DT."cASSET",
-      DT."cLATITUDE",DT."cLONGTITUDE",
-      HD."cPREPAIRCFSTATUS",HD."cPOSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
-      CHD."cUPDABY"
-      FROM "TBM_CUSTOMER_HD" AS CHD
-          INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
-          ON CHD."cCUSTCD" = RD."cCUSTCD"
-          INNER JOIN "TBM_CUSTOMER_DT" AS DT
-          ON DT."cCUSTCD" = RD."cCUSTCD"
-          LEFT JOIN "TBT_POHD" AS HD
-          ON CHD."cCUSTCD" = HD."cCUSTCD"
-          WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2 AND RD."cGRPCD" = $3 AND HD."cBRANCD" = $4`,
-      [cRTECD, shippingDate, cGRPCD, cBRANCD]
-    );
+    if (cUSEDT === true) {
+      const result = await client.query(
+        `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
+        CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
+        CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
+        CHD."cISBASKET",CHD."cSTATUS",RD."cGRPCD",RD."cRTECD",RD."iSEQROUTE",DT."cISPHOTO",DT."cPHOTO_SERV",
+            DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cDISTRICT",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
+        DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cDISTANCS",DT."cASSET",
+        DT."cLATITUDE",DT."cLONGTITUDE",
+        HD."cPREPAIRCFSTATUS",HD."cPOSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
+        CHD."cUPDABY"
+        FROM "TBM_CUSTOMER_HD" AS CHD
+            INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
+            ON CHD."cCUSTCD" = RD."cCUSTCD"
+            INNER JOIN "TBM_CUSTOMER_DT" AS DT
+            ON DT."cCUSTCD" = RD."cCUSTCD"
+            LEFT JOIN "TBT_POHD" AS HD
+            ON CHD."cCUSTCD" = HD."cCUSTCD"
+            WHERE RD."cRTECD" = $1 AND HD."dSHIPDATE"::date = $2 AND RD."cGRPCD" = $3 AND CHD."cBRANCD" = $4`,
+        [cRTECD, shippingDate, cGRPCD, cBRANCD]
+      );
 
-    await client.end();
+      await client.end();
 
-    res.json(result.rows);
+      res.json(result.rows);
+    } else {
+      const result = await client.query(
+        `SELECT CHD."cGUID",CHD."cCUSTCD",CHD."cCUSTNM",CHD."cCUSTBNM",CHD."cTAXNO",
+        CHD."cTEL",CHD."cCONTACT",CHD."cCONTACT_TEL",CHD."cLINEID",CHD."cBRANCD",
+        CHD."cCUSTTYPE",CHD."cPAYTYPE",CHD."iCREDTERM",CHD."iCREDLIM",CHD."cTSELLCD",
+        CHD."cISBASKET",CHD."cSTATUS",RD."cGRPCD",RD."cRTECD",RD."iSEQROUTE",DT."cISPHOTO",DT."cPHOTO_SERV",
+            DT."cPHOTO_PATH",DT."cPHOTO_NM",DT."cADDRESS",DT."cDISTRICT",DT."cSHIPTO",HD."cADDRESS",DT."cLOCATION",
+        DT."cPROVINCE",DT."cDISTRICT",DT."cSUBDIST",DT."cPOSTCD",DT."cDISTANCS",DT."cASSET",
+        DT."cLATITUDE",DT."cLONGTITUDE",
+        HD."cPREPAIRCFSTATUS",HD."cPOSTATUS",CHD."dCREADT",CHD."cCREABY",CHD."dUPDADT",
+        CHD."cUPDABY"
+        FROM "TBM_CUSTOMER_HD" AS CHD
+            INNER JOIN "TBM_CUSTOMER_ROUTE" AS RD
+            ON CHD."cCUSTCD" = RD."cCUSTCD"
+            INNER JOIN "TBM_CUSTOMER_DT" AS DT
+            ON DT."cCUSTCD" = RD."cCUSTCD"
+            LEFT JOIN "TBT_POHD" AS HD
+            ON CHD."cCUSTCD" = HD."cCUSTCD"
+            WHERE RD."cRTECD" = $1  AND RD."cGRPCD" = $2 AND HD."cBRANCD" = $3 AND HD."cPOSTATUS"!='3'
+            AND HD."cPOSTATUS"!='4'AND HD."cPOSTATUS"!='5'AND HD."cPOSTATUS"!='6'`,
+        [cRTECD, cGRPCD, cBRANCD]
+      );
+
+      await client.end();
+
+      res.json(result.rows);
+    }
   } catch (err) {
     const result = {
       success: false,
@@ -901,8 +935,8 @@ routeRouter.post("/getRouteToday", async (req, res) => {
       }
     });
 
-    var cVEHINM = req.body.cVEHINM;
-    var cPLATE = req.body.cPLATE;
+    var cVEHICD = req.body.cVEHICD;
+    var cBRANCD = req.body.cBRANCD;
     var cRTENM = req.body.cRTENM;
 
     const result = await client.query(
@@ -911,10 +945,8 @@ routeRouter.post("/getRouteToday", async (req, res) => {
        ON MR."cVEHICD" = VE."cVEHICD"
       INNER  JOIN "TBM_ROUTE" AS RO
        ON RO."cRTECD" = MR."cRTECD"
-       WHERE VE."cVEHINM" = $1 AND 
-       VE."cPLATE" = $2AND 
-       RO."cRTENM" LIKE $3`,
-      [cVEHINM, cPLATE, cRTENM]
+       WHERE VE."cVEHICD" = $1 AND VE."cBRANCD" = $2 AND RO."cRTENM" LIKE $3`,
+      [cVEHICD, cBRANCD, cRTENM]
     );
 
     await client.end();
@@ -1453,29 +1485,100 @@ routeRouter.post("/mobilePayment", async (req, res) => {
       }
     });
 
-    var iPAID = req.body.iPAID;
-    var cREMARK = req.body.cREMARK;
-    var iBASKETTOTAL = req.body.iBASKETTOTAL;
-    var cPOCD = req.body.cPOCD;
-    var cCUSTCD = req.body.cCUSTCD;
-    var cUPDABY = req.body.cUPDABY;
+    var cDOCREF = req.body.cDOCREF;
+    var dDOCDATE = req.body.dDOCDATE;
+    var cTRANSCD = req.body.cTRANSCD;
+    var cCONTACTCD = req.body.cCONTACTCD;
+    var iDEBIT = req.body.iDEBIT;
+    var iCREDIT = req.body.iCREDIT;
+    var cCREABY = req.body.cCREABY;
+    var cRECTYPE = req.body.cRECTYPE;
+    var cBANK = req.body.cBANK;
+    var cCQTYPE = req.body.cCQTYPE;
+    var cCQCD = req.body.cCQCD;
+    var cCQDT = req.body.cCQDT;
 
-    const oldResult = await client.query(
-      `UPDATE "TBT_POHD" 
-      SET "cPOSTATUS" = '4',"iPAID" = $1,"cREMARK"= $2,
-      "iBASKETTOTAL"= $3,"cUPDABY"= $6,"dUPDADT"=$7
-      WHERE "cPOCD" = $4 AND "cCUSTCD" = $5`,
-      [iPAID, cREMARK, iBASKETTOTAL, cPOCD, cCUSTCD, cUPDABY, dateTime]
+    const date = new Date();
+
+    var dateSplit = date.toLocaleDateString("en-US").split("/");
+
+    const checkResult = await client.query(
+      `SELECT  * FROM "TBT_BALANCE" WHERE "cDOCREF" = $1 `,
+      [cDOCREF]
     );
 
-    await client.end();
+    if (checkResult.rows.length > 0) {
+      const oldResult = await client.query(
+        `UPDATE "TBT_BALANCE" 
+        SET "dDOCDATE" = $2,"cTRANSCD" = $3,"cCONTACTCD"= $4,"iDEBIT" = $5,
+        "iCREDIT"= $6,"dRECDATE"= $7,"iRECMONTH"= $8,"dUPDADT"= $9,
+        "cUPDABY"= $10,"cRECTYPE"= $11,"cBANK"= $12,"cCQTYPE"= $13,"cCQCD"= $14,"cCQDT"= $15 
+        WHERE "cDOCREF" = $1`,
+        [
+          cDOCREF,
+          dDOCDATE,
+          cTRANSCD,
+          cCONTACTCD,
+          iDEBIT,
+          iCREDIT,
+          dateTime,
+          parseInt(dateSplit[1]),
+          dateTime,
+          cCREABY,
+          cRECTYPE,
+          cBANK,
+          cCQTYPE,
+          cCQCD,
+          cCQDT,
+        ]
+      );
 
-    const message = {
-      success: true,
-      message: "success",
-      result: null,
-    };
-    res.json(message);
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const oldResult = await client.query(
+        `INSERT INTO "TBT_BALANCE" 
+        ("cGUID","cDOCREF","dDOCDATE","cTRANSCD","cCONTACTCD","iDEBIT",
+        "iCREDIT","dRECDATE","iRECMONTH","dCREADT","cCREABY","dUPDADT",
+        "cUPDABY","cRECTYPE","cBANK","cCQTYPE","cCQCD","cCQDT")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+        [
+          uuid,
+          cDOCREF,
+          dDOCDATE,
+          cTRANSCD,
+          cCONTACTCD,
+          iDEBIT,
+          iCREDIT,
+          dateTime,
+          parseInt(dateSplit[1]),
+          dateTime,
+          cCREABY,
+          dateTime,
+          cCREABY,
+          cRECTYPE,
+          cBANK,
+          cCQTYPE,
+          cCQCD,
+          cCQDT,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
   } catch (err) {
     const result = {
       success: false,
@@ -1499,16 +1602,62 @@ routeRouter.get("/getProType", async (req, res) => {
       }
     });
 
-    const oldResult = await client.query(`SELECT * FROM "TBM_PRODUCT_TYPE"`);
+    const typeResult = await client.query(`SELECT * FROM "TBM_PRODUCT_TYPE"`);
+    const catResult = await client.query(`SELECT * FROM "TBM_CATEGORY"`);
+    const subCatResult = await client.query(`SELECT * FROM "TBM_CATEGORY_SUB"`);
+    const brandResult = await client.query(`SELECT * FROM "TBM_BRAND"`);
+
+    let type = typeResult.rows;
+    let category = catResult.rows;
+    let subCategory = subCatResult.rows;
+    let brand = brandResult.rows;
+    let tpyeList = [];
+    for (var i = 0; i < type.length; i++) {
+      var data = {
+        onClick: false,
+        typeName: type[i].cTYPENM,
+        typeCD: type[i].cTYPECD,
+        category: [],
+      };
+      for (var j = 0; j < category.length; j++) {
+        if (type[i].cTYPECD === category[j].cTYPECD) {
+          var cat = {
+            catNM: category[j].cCATENM,
+            catCD: category[j].cCATECD,
+            onSelect: false,
+            hight: 0.0,
+            subCategory: [],
+          };
+          for (var k = 0; k < subCategory.length; k++) {
+            if (subCategory[k].cCATECD === category[j].cCATECD) {
+              var subCat = {
+                click: false,
+                subCatNM: subCategory[k].cSUBCATENM,
+                subCatCD: subCategory[k].cSUBCATECD,
+                brand: [],
+              };
+              for (var l = 0; l < brand.length; l++) {
+                if (brand[l].cSUPCD === subCategory[k].cSUBCATECD) {
+                  var brandItem = {
+                    click: false,
+                    brandNM: brand[l].cBRNNM,
+                    brandCD: brand[l].cBRNDCD,
+                  };
+                  subCat.brand.push(brandItem);
+                }
+              }
+              cat.subCategory.push(subCat);
+            }
+          }
+          data.category.push(cat);
+        }
+      }
+      tpyeList.push(data);
+    }
 
     await client.end();
 
-    const message = {
-      success: true,
-      message: "success",
-      result: null,
-    };
-    res.json(oldResult.rows);
+    res.json(tpyeList);
   } catch (err) {
     const result = {
       success: false,
@@ -1679,6 +1828,7 @@ routeRouter.post("/addSendMoney", async (req, res) => {
       }
     });
 
+    var cGUID = req.body.cGUID;
     var cBRANCD = req.body.cBRANCD;
     var cGRPCD = req.body.cGRPCD;
     var cRTECD = req.body.cRTECD;
@@ -1691,7 +1841,50 @@ routeRouter.post("/addSendMoney", async (req, res) => {
     var cCREABY = req.body.cCREABY;
     var cCOSNM = req.body.cCOSNM;
     var cREMARK = req.body.cREMARK;
+    var cSERVER = req.body.cSERVER;
     var money = 0;
+
+    // C:\NETCoreWeb\Vansale\Web\wwwroot\upload\SendMoney
+    const now = new Date();
+    const dateValue = date.format(now, "YYMMDDHHmmss");
+    var billPath =
+      "C:/NETCoreWeb/Vansale/Web/wwwroot/upload/SendMoney/Bill_" +
+      dateValue +
+      ".jpg";
+    var costPath =
+      "C:/NETCoreWeb/Vansale/Web/wwwroot/upload/SendMoney/Cost_" +
+      dateValue +
+      ".jpg";
+    const path = cSERVER + "/" + billPath;
+    var cBILLSEV = "";
+    var cBILLPATH = "";
+    var cBILLNM = "";
+    var cCOSTSEV = "";
+    var cCOSTPATH = "";
+    var cCOSTNM = "";
+
+    if (cBILLPH != "") {
+      const billBuffer = Buffer.from(cBILLPH, "base64");
+      fs.writeFileSync(billPath, billBuffer);
+      let list = billPath.split("/");
+      cBILLSEV = cSERVER;
+      cBILLPATH = list[5] + "/" + list[6] + "/" + list[7];
+      cBILLNM = list[7];
+      // console.log(cBILLSEV);
+      // console.log(cBILLPATH);
+      // console.log(cBILLNM);
+    }
+
+    if (cCOSTPH != "") {
+      const costBuffer = Buffer.from(cCOSTPH, "base64");
+      fs.writeFileSync(costPath, costBuffer);
+      let list = costPath.split("/");
+      cCOSTSEV = cSERVER;
+      cCOSTPATH = list[5] + "/" + list[6] + "/" + list[7];
+      cCOSTNM = list[7];
+    }
+
+    // res.json(billPath);
 
     if (iCOST == 0) {
       money = iTOTAL;
@@ -1699,77 +1892,87 @@ routeRouter.post("/addSendMoney", async (req, res) => {
       money = iTOTAL - iCOST;
     }
 
-    const oldResult = await client.query(
-      `SELECT *
-      FROM "TBT_SEND_MONEY"
-      WHERE "cBRANCD"= $1 AND "cGRPCD"=$2 AND "cRTECD"=$3 AND "cVEHICD"=$4`,
-      [cBRANCD, cGRPCD, cRTECD, cVEHICD]
+    // const oldResult = await client.query(
+    //   `SELECT *
+    //   FROM "TBT_SEND_MONEY"
+    //   WHERE "cBRANCD"= $1 AND "cGRPCD"=$2 AND "cRTECD"=$3 AND "cVEHICD"=$4`,
+    //   [cGUID]
+    // );
+
+    // if (oldResult.rows.length > 0) {
+    //   const result = await client.query(
+    //     `UPDATE "TBT_SEND_MONEY"
+    //     SET "cDRIVER"= $2,"iTOTAL"= $3,"iCOST"=$4,"iNETTOTAL"=$5,"cUPDABY"=$6,"dUPDADT" = $7, "cCOSNM" =$8, "cREMARK" = $9,
+    //     "cBILLSEV" = $10,"cBILLPATH" = $11,"cBILLNM" = $12,"cCOSTSEV" = $13,"cCOSTPATH" = $14,"cCOSTNM" = $15
+    //     WHERE "cGUID"= $1 `,
+    //     [
+    //       cGUID,
+    //       cDRIVER,
+    //       iTOTAL,
+    //       iCOST,
+    //       money,
+    //       cCREABY,
+    //       dateTime,
+    //       cCOSNM,
+    //       cREMARK,
+    //       cBILLSEV,
+    //       cBILLPATH,
+    //       cBILLNM,
+    //       cCOSTSEV,
+    //       cCOSTPATH,
+    //       cCOSTNM,
+    //     ]
+    //   );
+
+    //   await client.end();
+
+    //   const message = {
+    //     success: true,
+    //     message: "success",
+    //     result: null,
+    //   };
+    //   res.json(message);
+    // } else {
+    const result = await client.query(
+      `INSERT INTO "TBT_SEND_MONEY"
+        ("cGUID","cBRANCD","cGRPCD","cRTECD","cVEHICD","cDRIVER","iTOTAL","iCOST",
+        "iNETTOTAL","cBILLSEV","cBILLPATH","cBILLNM","cCOSTSEV","cCOSTPATH","cCOSTNM",
+        "cCREABY","cUPDABY","dCREADT","dUPDADT","cCOSNM", "cREMARK")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+      [
+        uuid,
+        cBRANCD,
+        cGRPCD,
+        cRTECD,
+        cVEHICD,
+        cDRIVER,
+        iTOTAL,
+        iCOST,
+        money,
+        cBILLSEV,
+        cBILLPATH,
+        cBILLNM,
+        cCOSTSEV,
+        cCOSTPATH,
+        cCOSTNM,
+        cCREABY,
+        cCREABY,
+        dateTime,
+        dateTime,
+        cCOSNM,
+        cREMARK,
+      ]
     );
 
-    if (oldResult.rows.length > 0) {
-      const result = await client.query(
-        `UPDATE "TBT_SEND_MONEY" 
-        SET "cDRIVER"= $5,"iTOTAL"= $6,"iCOST"=$7,"iNETTOTAL"=$8,"cBILLPH"=$9,"cCOSTPH"=$10,"cUPDABY"=$11,"dUPDADT" = NOW(), "cCOSNM" =$12, "cREMARK" = $13
-        WHERE "cBRANCD"= $1 AND "cGRPCD"= $2 AND "cRTECD"= $3 AND "cVEHICD"= $4`,
-        [
-          cBRANCD,
-          cGRPCD,
-          cRTECD,
-          cVEHICD,
-          cDRIVER,
-          iTOTAL,
-          iCOST,
-          money,
-          cBILLPH,
-          cCOSTPH,
-          cCREABY,
-          cCOSNM,
-          cREMARK,
-        ]
-      );
+    await client.end();
 
-      await client.end();
-
-      const message = {
-        success: true,
-        message: "success",
-        result: null,
-      };
-      res.json(message);
-    } else {
-      const result = await client.query(
-        `INSERT INTO "TBT_SEND_MONEY" 
-        ("cGUID","cBRANCD","cGRPCD","cRTECD","cVEHICD","cDRIVER","iTOTAL","iCOST",
-        "iNETTOTAL","cBILLPH","cCOSTPH","cCREABY","cUPDABY","dCREADT","dUPDADT","cCOSNM", "cREMARK")
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW(),NOW(),$14,$15)`,
-        [
-          uuid,
-          cBRANCD,
-          cGRPCD,
-          cRTECD,
-          cVEHICD,
-          cDRIVER,
-          iTOTAL,
-          iCOST,
-          money,
-          cBILLPH,
-          cCOSTPH,
-          cCREABY,
-          cCREABY,
-          cCOSNM,
-          cREMARK,
-        ]
-      );
-
-      await client.end();
-
-      const message = {
-        success: true,
-        message: "success",
-        result: null,
-      };
-      res.json(message);
-    }
+    const message = {
+      success: true,
+      message: `success`,
+      result: null,
+    };
+    res.json(message);
+    // }
   } catch (err) {
     const result = {
       success: false,
@@ -2085,7 +2288,6 @@ routeRouter.post("/getHisBasket", async (req, res) => {
   }
 });
 
-
 // +++++++++++++++++++ get history product of customer +++++++++++++++++++
 routeRouter.post("/getHisProduct", async (req, res) => {
   try {
@@ -2099,7 +2301,6 @@ routeRouter.post("/getHisProduct", async (req, res) => {
       }
     });
     var cCUSTCD = req.body.cCUSTCD;
-
 
     const oldResult = await client.query(
       `SELECT DISTINCT ON (DT."cPRODCD") PRO."cPRODCD",PRO."cPRODNM",PRO."cTYPE",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cSUOMCD",
