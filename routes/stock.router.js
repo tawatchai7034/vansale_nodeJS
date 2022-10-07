@@ -143,10 +143,8 @@ stockRouter.post("/addStockCard", async (req, res) => {
     var cUOMCD = req.body.cUOMCD;
     var cWH = req.body.cWH;
     var cREF_DOC = req.body.cREF_DOC;
-    var iBEGIN_QTY = req.body.iBEGIN_QTY;
     var iRECEIVE_QTY = req.body.iRECEIVE_QTY;
     var iISSUE_QTY = req.body.iISSUE_QTY;
-    var iEND_QTY = req.body.iEND_QTY;
     var cREMARK = req.body.cREMARK;
     var cLOT_NO = req.body.cLOT_NO;
     var cCREABY = req.body.cCREABY;
@@ -157,58 +155,131 @@ stockRouter.post("/addStockCard", async (req, res) => {
         WHERE "cBRANCD" = $1 AND "cPRODCD" = $2 AND "cUOMCD" = $3 AND "cWH" = $4`,
       [cBRANCD, cPRODCD, cUOMCD, cWH]
     );
-    
-    var stock = oldResult.rows[0];
-    var qty =
-      parseFloat(stock.iQTY) +
-      parseFloat(iRECEIVE_QTY) -
-      parseFloat(iISSUE_QTY);
 
-    const result = await client.query(
-      `INSERT INTO "TBR_INVENTORY_STOCKCARD" 
-      ("cGUID","cBRANCD","cWH","cPRODCD","cUOMCD","dINVENT_DT","cREF_DOC",
-      "iBEGIN_QTY","iRECEIVE_QTY","iISSUE_QTY","iEND_QTY","cREMARK","dCREADT",
-      "cCREABY","dUPDADT","cUPDABY","cLOT_NO")
+    if (oldResult.rows.length > 0) {
+      // console.log(oldResult.rows.length)
+      var stock = oldResult.rows[0];
+      var qty =
+        parseFloat(stock.iQTY) +
+        parseFloat(iRECEIVE_QTY) -
+        parseFloat(iISSUE_QTY);
+
+      const result = await client.query(
+        `INSERT INTO "TBR_INVENTORY_STOCKCARD" 
+        ("cGUID","cBRANCD","cWH","cPRODCD","cUOMCD","dINVENT_DT","cREF_DOC",
+        "iBEGIN_QTY","iRECEIVE_QTY","iISSUE_QTY","iEND_QTY","cREMARK","dCREADT",
+        "cCREABY","dUPDADT","cUPDABY","cLOT_NO")
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
-      [
-        uuid,
-        cBRANCD,
-        cWH,
-        cPRODCD,
-        cUOMCD,
-        dateTime,
-        cREF_DOC,
-        stock.iQTY,
-        iRECEIVE_QTY,
-        iISSUE_QTY,
-        qty,
-        cREMARK,
-        dateTime,
-        cCREABY,
-        dateTime,
-        cCREABY,
-        cLOT_NO
-      ]
-    );
+        [
+          uuid,
+          cBRANCD,
+          cWH,
+          cPRODCD,
+          cUOMCD,
+          dateTime,
+          cREF_DOC,
+          stock.iQTY,
+          iRECEIVE_QTY,
+          iISSUE_QTY,
+          qty,
+          cREMARK,
+          dateTime,
+          cCREABY,
+          dateTime,
+          cCREABY,
+          cLOT_NO,
+        ]
+      );
 
+      await client.query(
+        `UPDATE "TBR_INVENTORY_BALANCE" 
+      SET "iQTY" = $1,
+      "cUPDABY" = $2,
+      "dUPDADT" =$3
+      WHERE "cBRANCD" = $4 AND "cPRODCD" = $5 AND "cUOMCD" = $6 AND "cWH" = $7`,
+        [qty, cCREABY, dateTime, cBRANCD, cPRODCD, cUOMCD, cWH]
+      );
+      await client.end();
 
-    await client.query(
-      `UPDATE "TBR_INVENTORY_BALANCE" 
-          SET "iQTY" = $1,
-          "cUPDABY" = $2,
-          "dUPDADT" =$3
-          WHERE "cBRANCD" = $4 AND "cPRODCD" = $5 AND "cUOMCD" = $6 AND "cWH" = $7`,
-      [qty, cCREABY, dateTime, cBRANCD, cPRODCD, cUOMCD, cWH]
-    );
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const proResult = await client.query(
+        `SELECT *
+          FROM "TBM_PRODUCT" 
+          WHERE "cPRODCD" = $1 `,
+        [cPRODCD]
+      );
 
-    await client.end();
+      await client.query(
+        `INSERT INTO "TBR_INVENTORY_BALANCE" 
+        ("cGUID","cBRANCD","cWH","cPRODCD","cUOMCD","cPRODNM","cTYPE",
+        "cCATECD","cSUBCATECD","cBRNDCD","iQTY","iWEIGHT","cSTATUS","dCREADT","cCREABY","dUPDADT","cUPDABY")
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        [
+          uuid,
+          cBRANCD,
+          cWH,
+          cPRODCD,
+          cUOMCD,
+          proResult.rows[0].cPRODNM,
+          proResult.rows[0].cTYPE,
+          proResult.rows[0].cCATECD,
+          proResult.rows[0].cSUBCATECD,
+          proResult.rows[0].cBRNDCD,
+          parseFloat(iRECEIVE_QTY) - parseFloat(iISSUE_QTY),
+          0.0,
+          "Y",
+          dateTime,
+          cCREABY,
+          dateTime,
+          cCREABY,
+        ]
+      );
 
-    const message = {
-      success: true,
-      message: "success",
-      result: null,
-    };
-    res.json(message);
+      var stock = oldResult.rows[0];
+      var qty = parseFloat(iRECEIVE_QTY) - parseFloat(iISSUE_QTY);
+
+      const result = await client.query(
+        `INSERT INTO "TBR_INVENTORY_STOCKCARD" 
+        ("cGUID","cBRANCD","cWH","cPRODCD","cUOMCD","dINVENT_DT","cREF_DOC",
+        "iBEGIN_QTY","iRECEIVE_QTY","iISSUE_QTY","iEND_QTY","cREMARK","dCREADT",
+        "cCREABY","dUPDADT","cUPDABY","cLOT_NO")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        [
+          uuid,
+          cBRANCD,
+          cWH,
+          cPRODCD,
+          cUOMCD,
+          dateTime,
+          cREF_DOC,
+          0,
+          iRECEIVE_QTY,
+          iISSUE_QTY,
+          qty,
+          cREMARK,
+          dateTime,
+          cCREABY,
+          dateTime,
+          cCREABY,
+          cLOT_NO,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
   } catch (err) {
     const result = {
       success: false,

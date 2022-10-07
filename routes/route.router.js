@@ -231,7 +231,8 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
       DT."cDISCOUNT",DT."iFREE",DT."iTOTAL",DT."cBASKCD",DT."cBASKNM",DT."cSTATUS",
       DT."dCREADT",DT."cCREABY",DT."dUPDADT",DT."cUPDABY",DT."cINSERTYPE",DT."iSUNITPRICE",
       DT."iMUNITPRICE",DT."iLUNITPRICE",DT."cPREPAIRSTATUS",DT."iPREPAIRAMOUT",
-      PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",DT."iNETTOTAL",DT."iINCOMPRO",DT."iCANCLEPRO",DT."iLOSSPRO"
+      PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",DT."iNETTOTAL",DT."iINCOMPRO",DT."iCANCLEPRO",DT."iLOSSPRO",
+      DT."cSUOMCD",DT."cMUOMCD",DT."cLUOMCD"
       FROM "TBT_PODT" AS DT 
       LEFT JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD" = PRO."cPRODCD"
       INNER JOIN "TBM_PRODUCT_TYPE" AS TY ON TY."cTYPECD" = PRO."cTYPE"   
@@ -1278,8 +1279,32 @@ routeRouter.post("/addLOSSPRO", async (req, res) => {
     var cPOCD = req.body.cPOCD;
     var iQTY = req.body.iQTY;
     var iTOTAL = req.body.iTOTAL;
+    var cSERVER = req.body.cSERVER;
     var cCREABY = req.body.cCREABY;
     var cIB64 = req.body.cIB64;
+
+    const now = new Date();
+    const dateValue = date.format(now, "YYMMDDHHmmss");
+    var path =
+      "C:/NETCoreWeb/Vansale/Web/wwwroot/upload/LOSSPRO/LOSSPRO_" +
+      dateValue +
+      ".jpg";
+
+    var PHSEV = "";
+    var PHPATH = "";
+    var PHNM = "";
+
+    if (cIB64 != "") {
+      const billBuffer = Buffer.from(cIB64, "base64");
+      fs.writeFileSync(path, billBuffer);
+      let list = path.split("/");
+      PHSEV = cSERVER;
+      PHPATH = list[5] + "/" + list[6] + "/" + list[7];
+      PHNM = list[7];
+      // console.log(cBILLSEV);
+      // console.log(cBILLPATH);
+      // console.log(cBILLNM);
+    }
 
     const oldResult = await client.query(
       `SELECT *
@@ -1288,16 +1313,20 @@ routeRouter.post("/addLOSSPRO", async (req, res) => {
       [cCUSTCD, cPOCD]
     );
 
+    // res.json(oldResult.rows)
+
     if (oldResult.rows.length > 0) {
       const result = await client.query(
         `UPDATE "TBT_PO_LOSSPRO" 
-    SET "iQTY"= $3,
-    "iTOTAL" = $4,
-    "cIB64" = $5,
-    "cUPDABY" = $6,
-    "dUPDADT"=$7
-    WHERE "cCUSTCD" = $1 AND "cPOCD" = $2`,
-        [cCUSTCD, cPOCD, iQTY, iTOTAL, cIB64, cCREABY, dateTime]
+      SET "iQTY"= $3,
+      "iTOTAL" = $4,
+      "cPHSEV"= $5,
+      "cPHPATH"= $6,
+      "cPHNM"= $7 ,
+      "cUPDABY" = $8,
+      "dUPDADT"=$9
+      WHERE "cCUSTCD" = $1 AND "cPOCD" = $2`,
+        [cCUSTCD, cPOCD, iQTY, iTOTAL, PHSEV, PHPATH, PHNM, cCREABY, dateTime]
       );
 
       await client.end();
@@ -1311,15 +1340,18 @@ routeRouter.post("/addLOSSPRO", async (req, res) => {
     } else {
       const result = await client.query(
         `INSERT INTO "TBT_PO_LOSSPRO" 
-        ("cGUID","cPOCD","cCUSTCD","iQTY","iTOTAL","cIB64","cCREABY","cUPDABY","dCREADT","dUPDADT")
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        ("cGUID","cPOCD","cCUSTCD","iQTY","iTOTAL","cPHSEV","cPHPATH","cPHNM",
+        "cCREABY","cUPDABY","dCREADT","dUPDADT")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
           uuid,
           cPOCD,
           cCUSTCD,
           iQTY,
           iTOTAL,
-          cIB64,
+          PHSEV,
+          PHPATH,
+          PHNM,
           cCREABY,
           cCREABY,
           dateTime,
