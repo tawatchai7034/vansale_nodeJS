@@ -6,7 +6,6 @@ const { Client } = require("pg");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const date = require("date-and-time");
-var uploader = require("base64-image-upload");
 
 let dateTime = new Date().toJSON();
 var uuid = `${crypto.randomUUID()}`;
@@ -226,15 +225,19 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
     var cPRODCD = req.body.cPRODCD;
 
     const result = await client.query(
-      `SELECT DT."cGUID",DT."cPOCD",DT."iSEQ",DT."cPRODCD",DT."cPRODNM",DT."cBRNDCD",
-      DT."cBRNDNM",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cSUOMNM",DT."cMUOMNM",DT."cLUOMNM"
-      ,DT."cPROMO",DT."iDISCOUNT",
+      `SELECT DT."cGUID",DT."cPOCD",DT."iSEQ",DT."cPRODCD",DT."cPRODNM",PRO."cTYPE",TY."cTYPENM",PRO."cCATECD",
+      CA."cCATENM",PRO."cSUBCATECD",SCA."cSUBCATENM",DT."cBRNDCD",DT."cBRNDNM",DT."iSSIZEQTY",DT."iMSIZEQTY",
+		DT."iLSIZEQTY",DT."cSUOMNM",DT."cMUOMNM",DT."cLUOMNM",DT."cPROMO",DT."iDISCOUNT",
       DT."cDISCOUNT",DT."iFREE",DT."iTOTAL",DT."cBASKCD",DT."cBASKNM",DT."cSTATUS",
       DT."dCREADT",DT."cCREABY",DT."dUPDADT",DT."cUPDABY",DT."cINSERTYPE",DT."iSUNITPRICE",
       DT."iMUNITPRICE",DT."iLUNITPRICE",DT."cPREPAIRSTATUS",DT."iPREPAIRAMOUT",
       PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",DT."iNETTOTAL",DT."iINCOMPRO",DT."iCANCLEPRO",DT."iLOSSPRO"
       FROM "TBT_PODT" AS DT 
       LEFT JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD" = PRO."cPRODCD"
+      INNER JOIN "TBM_PRODUCT_TYPE" AS TY ON TY."cTYPECD" = PRO."cTYPE"   
+      INNER JOIN "TBM_CATEGORY" AS CA ON CA."cCATECD" = PRO."cCATECD"
+      INNER JOIN "TBM_CATEGORY_SUB" AS SCA ON SCA."cSUBCATECD" = PRO."cSUBCATECD"
+      INNER JOIN "TBM_BRAND" AS BR ON BR."cBRNCD" = PRO."cBRNDCD"
       WHERE DT."cPOCD"= $1 AND  DT."cPRODNM" LIKE $2 AND  DT."cPRODCD" LIKE $3`,
       [cPOCD, cPRODNM, cPRODCD]
     );
@@ -1641,7 +1644,7 @@ routeRouter.get("/getProType", async (req, res) => {
                   var brandItem = {
                     click: false,
                     brandNM: brand[l].cBRNNM,
-                    brandCD: brand[l].cBRNDCD,
+                    brandCD: brand[l].cBRNCD,
                   };
                   subCat.brand.push(brandItem);
                 }
@@ -2301,15 +2304,23 @@ routeRouter.post("/getHisProduct", async (req, res) => {
       }
     });
     var cCUSTCD = req.body.cCUSTCD;
+    var cPRODNM = req.body.cPRODNM;
+    var cPRODCD = req.body.cPRODCD;
 
     const oldResult = await client.query(
       `SELECT DISTINCT ON (DT."cPRODCD") PRO."cPRODCD",PRO."cPRODNM",PRO."cTYPE",DT."iSSIZEQTY",DT."iMSIZEQTY",DT."iLSIZEQTY",DT."cSUOMCD",
-      DT."cSUOMNM",DT."cMUOMCD",DT."cMUOMNM",DT."cLUOMCD",DT."cLUOMNM" ,DT."iSUNITPRICE",DT."iMUNITPRICE",DT."iLUNITPRICE"
+      DT."cSUOMNM",DT."cMUOMCD",DT."cMUOMNM",DT."cLUOMCD",DT."cLUOMNM" ,DT."iSUNITPRICE",DT."iMUNITPRICE",DT."iLUNITPRICE",
+      PRO."cTYPE",TY."cTYPENM",PRO."cCATECD",CA."cCATENM",PRO."cSUBCATECD",SCA."cSUBCATENM",DT."cBRNDCD",DT."cBRNDNM",
+      PRO."cPHOTO_SERV",PRO."cPHOTO_PATH",PRO."cPHOTO_NM",DT."iINCOMPRO",DT."iCANCLEPRO",DT."iLOSSPRO",DT."cSTATUS"
       FROM   "TBT_PODT" AS DT
       INNER JOIN "TBT_POHD" AS HD ON HD."cPOCD" = DT."cPOCD"
       INNER JOIN "TBM_PRODUCT" AS PRO ON DT."cPRODCD"= PRO."cPRODCD"
-      WHERE HD."cCUSTCD" = $1`,
-      [cCUSTCD]
+      INNER JOIN "TBM_PRODUCT_TYPE" AS TY ON TY."cTYPECD" = PRO."cTYPE"   
+      INNER JOIN "TBM_CATEGORY" AS CA ON CA."cCATECD" = PRO."cCATECD"
+      INNER JOIN "TBM_CATEGORY_SUB" AS SCA ON SCA."cSUBCATECD" = PRO."cSUBCATECD"
+      INNER JOIN "TBM_BRAND" AS BR ON BR."cBRNCD" = PRO."cBRNDCD"
+      WHERE HD."cCUSTCD" = $1 AND PRO."cPRODNM" LIKE $2 AND PRO."cPRODCD" LIKE $3`,
+      [cCUSTCD, cPRODNM, cPRODCD]
     );
 
     await client.end();
@@ -2329,4 +2340,5 @@ routeRouter.post("/getHisProduct", async (req, res) => {
     res.json(result);
   }
 });
+
 module.exports = routeRouter;
