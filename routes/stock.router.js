@@ -290,4 +290,351 @@ stockRouter.post("/addStockCard", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ add return product header +++++++++++++++++++
+stockRouter.post("/addReturnHD", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBRANCD = req.body.cBRANCD;
+    var cGRPCD = req.body.cGRPCD;
+    var cRTECD = req.body.cRTECD;
+    var cCUSTCD = req.body.cCUSTCD;
+    var cCUSTNM = req.body.cCUSTNM;
+    var cVEHICD = req.body.cVEHICD;
+    var cDRIVER = req.body.cDRIVER;
+    var cREMARK = req.body.cREMARK;
+    var iTOTAL = req.body.iTOTAL;
+    var cREFDOC = req.body.cREFDOC;
+    var cRETYP = req.body.cRETYP;
+    var cPAYST = req.body.cPAYST;
+    var cCREABY = req.body.cCREABY;
+
+    const now = new Date();
+    const dateValue = date.format(now, "YYMMDD");
+    var code = `%${cRETYP}-${dateValue}%`;
+    const proResult = await client.query(
+      `SELECT *
+        FROM "TBT_RETURN_HD" 
+        WHERE "cRETYP" = $1 AND "cRETCD" LIKE $2`,
+      [cRETYP, code]
+    );
+    var cRETCD = `${cRETYP}-${dateValue}-0001`;
+
+    var returnList = proResult.rows;
+    if (returnList.length > 0) {
+      let roleCodeCheck = [];
+      let codeEntityList = [];
+      for (var i = 0; i < returnList.length; i++) {
+        roleCodeCheck.push(returnList[i].cRETCD);
+      }
+
+      for (var i = 1; i < 10000; i++) {
+        let str = `${i}`;
+        let roleCode = str.padStart(4, "0");
+        let RoleCode = `${cRETYP}-${dateValue}-${roleCode}`;
+        if (roleCodeCheck.includes(RoleCode) == false) {
+          codeEntityList.push(RoleCode);
+        }
+      }
+      cRETCD = codeEntityList[0];
+    }
+
+    const result = await client.query(
+      `INSERT INTO "TBT_RETURN_HD" 
+      ("cGUID","cBRANCD","cRETCD","cGRPCD","cRTECD","cCUSTCD",
+      "cCUSTNM","cVEHICD","cDRIVER","cREMARK","cCREABY","cUPDABY","dCREADT",
+      "dUPDADT","cPAYST","iTOTAL","cREFDOC","dRETDT","cRETYP")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+      [
+        uuid,
+        cBRANCD,
+        cRETCD,
+        cGRPCD,
+        cRTECD,
+        cCUSTCD,
+        cCUSTNM,
+        cVEHICD,
+        cDRIVER,
+        cREMARK,
+        cCREABY,
+        cCREABY,
+        dateTime,
+        dateTime,
+        cPAYST,
+        iTOTAL,
+        cREFDOC,
+        dateTime,
+        cRETYP,
+      ]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: cRETCD,
+    };
+    res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ update return product header +++++++++++++++++++
+stockRouter.post("/updateReturnHD", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBRANCD = req.body.cBRANCD;
+    var cGRPCD = req.body.cGRPCD;
+    var cRTECD = req.body.cRTECD;
+    var cCUSTCD = req.body.cCUSTCD;
+    var cCUSTNM = req.body.cCUSTNM;
+    var cVEHICD = req.body.cVEHICD;
+    var cDRIVER = req.body.cDRIVER;
+    var cREMARK = req.body.cREMARK;
+    var iTOTAL = req.body.iTOTAL;
+    var cREFDOC = req.body.cREFDOC;
+    var cRETYP = req.body.cRETYP;
+    var cPAYST = req.body.cPAYST;
+    var cCREABY = req.body.cCREABY;
+    var cRETCD = req.body.cRETCD;
+
+    const result = await client.query(
+      `UPDATE "TBT_RETURN_HD" 
+      SET "cBRANCD" = $2,"cGRPCD" = $3,
+      "cRTECD" = $4,"cCUSTCD" = $5,
+      "cCUSTNM" = $6,"cVEHICD" = $7,
+      "cDRIVER" = $8,"cREMARK" = $9,
+      "cPAYST" = $10,"iTOTAL" = $11,
+      "cREFDOC" = $12,"cRETYP" = $13,
+      "cUPDABY" = $14,"dUPDADT" = $15
+      WHERE "cRETCD" = $1`,
+      [
+        cRETCD,
+        cBRANCD,
+        cGRPCD,
+        cRTECD,
+        cCUSTCD,
+        cCUSTNM,
+        cVEHICD,
+        cDRIVER,
+        cREMARK,
+        cPAYST,
+        iTOTAL,
+        cREFDOC,
+        cRETYP,
+        cCREABY,
+        dateTime,
+      ]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ add return product detail +++++++++++++++++++
+stockRouter.post("/addReturnDT", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cRETCD = req.body.cRETCD;
+    var iSEQ = req.body.iSEQ;
+    var cPRODCD = req.body.cPRODCD;
+    var cPRODNM = req.body.cPRODNM;
+    var cBRNDCD = req.body.cBRNDCD;
+    var cBRNDNM = req.body.cBRNDNM;
+    var iSSIZEQTY = req.body.iSSIZEQTY;
+    var iMSIZEQTY = req.body.iMSIZEQTY;
+    var iLSIZEQTY = req.body.iLSIZEQTY;
+    var cSUOMCD = req.body.cSUOMCD;
+    var cSUOMNM = req.body.cSUOMNM;
+    var cMUOMCD = req.body.cMUOMCD;
+    var cMUOMNM = req.body.cMUOMNM;
+    var cLUOMCD = req.body.cLUOMCD;
+    var cLUOMNM = req.body.cLUOMNM;
+    var iSUNITPRICE = req.body.iSUNITPRICE;
+    var iMUNITPRICE = req.body.iMUNITPRICE;
+    var iLUNITPRICE = req.body.iLUNITPRICE;
+    var cCREABY = req.body.cCREABY;
+    var sQty = 0;
+    var mQty = 0;
+    var lQty = 0;
+    var sPrice = 0;
+    var mPrice = 0;
+    var lPrice = 0;
+    var sTotal = 0;
+    var mTotal = 0;
+    var lTotal = 0;
+
+    if (parseInt(iSSIZEQTY) > 0) {
+      sQty = parseInt(iSSIZEQTY);
+      sPrice = parseFloat(iSUNITPRICE);
+      sTotal = sQty * sPrice;
+    }
+
+    if (parseInt(iMSIZEQTY) > 0) {
+      mQty = parseInt(iMSIZEQTY);
+      mPrice = parseFloat(iMUNITPRICE);
+      mTotal = mQty * mPrice;
+    }
+
+    if (parseInt(iLSIZEQTY) > 0) {
+      lQty = parseInt(iLSIZEQTY);
+      lPrice = parseFloat(iLUNITPRICE);
+      lTotal = lQty * lPrice;
+    }
+
+    const checkResult = await client.query(
+      `SELECT *
+        FROM "TBT_RETURN_DT"  
+        WHERE "cRETCD" = $1 AND "iSEQ" = $2`,
+      [cRETCD, iSEQ]
+    );
+
+    if (checkResult.rows.length > 0) {
+      const result = await client.query(
+        `UPDATE "TBT_RETURN_DT" 
+        SET "cPRODCD" = $3,"cPRODNM" = $4,
+        "cBRNDCD" = $5,"cBRNDNM" = $6,
+        "iSSIZEQTY" = $7,"iMSIZEQTY" = $8,
+        "iLSIZEQTY" = $9,"cSUOMCD" = $10,
+        "cSUOMNM" = $11,"cMUOMCD" = $12,
+        "cMUOMNM" = $13,"cLUOMCD" = $14,
+        "cLUOMNM" = $15,"iSUNITPRICE" = $16,
+        "iMUNITPRICE" = $17,"iLUNITPRICE" = $18,
+        "iTOTAL" = $19,"cUPDABY" = $20,
+        "dUPDADT" = $21 
+        WHERE "cRETCD" = $1 AND "iSEQ" = $2`,
+        [
+          cRETCD,
+          iSEQ,
+          cPRODCD,
+          cPRODNM,
+          cBRNDCD,
+          cBRNDNM,
+          iSSIZEQTY,
+          iMSIZEQTY,
+          iLSIZEQTY,
+          cSUOMCD,
+          cSUOMNM,
+          cMUOMCD,
+          cMUOMNM,
+          cLUOMCD,
+          cLUOMNM,
+          iSUNITPRICE,
+          iMUNITPRICE,
+          iLUNITPRICE,
+          sTotal + mTotal + lTotal,
+          cCREABY,
+          dateTime,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const result = await client.query(
+        `INSERT INTO "TBT_RETURN_DT" 
+        ("cGUID","cRETCD","iSEQ","cPRODCD","cPRODNM","cBRNDCD","cBRNDNM","iSSIZEQTY","iMSIZEQTY","iLSIZEQTY",
+        "cSUOMCD","cSUOMNM","cMUOMCD","cMUOMNM","cLUOMCD","cLUOMNM","iSUNITPRICE","iMUNITPRICE","iLUNITPRICE",
+        "iTOTAL","cCREABY","cUPDABY","dCREADT","dUPDADT")
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+        [
+          uuid,
+          cRETCD,
+          iSEQ,
+          cPRODCD,
+          cPRODNM,
+          cBRNDCD,
+          cBRNDNM,
+          iSSIZEQTY,
+          iMSIZEQTY,
+          iLSIZEQTY,
+          cSUOMCD,
+          cSUOMNM,
+          cMUOMCD,
+          cMUOMNM,
+          cLUOMCD,
+          cLUOMNM,
+          iSUNITPRICE,
+          iMUNITPRICE,
+          iLUNITPRICE,
+          sTotal + mTotal + lTotal,
+          cCREABY,
+          cCREABY,
+          dateTime,
+          dateTime,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
 module.exports = stockRouter;
