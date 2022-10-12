@@ -2184,8 +2184,8 @@ routeRouter.post("/getStoreDetail", async (req, res) => {
       dCANDT: cancleDate,
       iCREDTERM: creditResult.rows[0].iCREDTERM.toString(),
       iCREDLIM: creditResult.rows[0].iCREDLIM,
-      iTOTAL: iTOTAL,
-      iPAID: iPAID,
+      iTOTAL: `${iTOTAL}`,
+      iPAID: `${iPAID}`,
       iPOTOTAL: PoTotalResult.rows[0].iTOTAL,
     };
 

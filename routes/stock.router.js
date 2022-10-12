@@ -637,4 +637,213 @@ stockRouter.post("/addReturnDT", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ add TBR_BASKET_BALANCE +++++++++++++++++++
+stockRouter.post("/addBasketBalanch", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBRANCD = req.body.cBRANCD;
+    var cBASKCD = req.body.cBASKCD;
+    var cUOMCD = req.body.cUOMCD;
+    var cWH = req.body.cWH;
+    var iQTY = req.body.iQTY;
+    var cBASKNM = req.body.cBASKNM;
+    var cCREABY = req.body.cCREABY;
+
+    const proResult = await client.query(
+      `SELECT *
+        FROM "TBR_BASKET_BALANCE" 
+        WHERE "cBRANCD" = $1 AND "cBASKCD" = $2 AND "cUOMCD" = $3 AND "cWH" = $4`,
+      [cBRANCD, cBASKCD, cUOMCD, cWH]
+    );
+
+    var returnList = proResult.rows;
+    if (returnList.length > 0) {
+      await client.end();
+
+      const message = {
+        success: false,
+        message: "Data is repeat",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      const result = await client.query(
+        `INSERT INTO "TBR_BASKET_BALANCE"
+        ("cGUID","cBRANCD","cWH","cBASKCD","cBASKNM",
+        "cUOMCD","iQTY","cCREABY","cUPDABY","dCREADT","dUPDADT")
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          uuid,
+          cBRANCD,
+          cWH,
+          cBASKCD,
+          cBASKNM,
+          cUOMCD,
+          iQTY,
+          cCREABY,
+          cCREABY,
+          dateTime,
+          dateTime,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ add TBR_BASKET_STOCKCARD +++++++++++++++++++
+stockRouter.post("/addBasketStockCard", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBRANCD = req.body.cBRANCD;
+    var cBASKCD = req.body.cBASKCD;
+    var cBASKNM = req.body.cBASKNM;
+    var cUOMCD = req.body.cUOMCD;
+    var cWH = req.body.cWH;
+    var cREFDOC = req.body.cREFDOC;
+    var iRECEIVE_QTY = req.body.iRECEIVE_QTY;
+    var iISSUE_QTY = req.body.iISSUE_QTY;
+    var cREMARK = req.body.cREMARK;
+    var cCREABY = req.body.cCREABY;
+
+    const proResult = await client.query(
+      `SELECT *
+        FROM "TBR_BASKET_BALANCE" 
+        WHERE "cBRANCD" = $1 AND "cBASKCD" = $2 AND "cUOMCD" = $3 AND "cWH" = $4`,
+      [cBRANCD, cBASKCD, cUOMCD, cWH]
+    );
+    // res.json(proResult.rows);
+
+    // var returnList = proResult.rows;
+
+    var stock = proResult.rows[0];
+    var qty = 0;
+    var qtyBegin = 0;
+
+    // console.log(proResult.rows.length);
+    // res.json(proResult.rows);
+    if (iRECEIVE_QTY === "") {
+      iRECEIVE_QTY = "0";
+    }
+    if (iISSUE_QTY === "") {
+      iISSUE_QTY = "0";
+    }
+
+    if (proResult.rows.length === 0) {
+      qtyBegin = 0;
+      qty = parseInt(iRECEIVE_QTY) - parseInt(iISSUE_QTY);
+    } else {
+      qtyBegin = parseInt(stock.iQTY);
+
+      qty =
+        parseInt(stock.iQTY) + parseInt(iRECEIVE_QTY) - parseInt(iISSUE_QTY);
+    }
+
+    await client.query(
+      `INSERT INTO "TBR_BASKET_STOCKCARD"
+              ("cGUID","cBRANCD","cWH","cBASKCD","cBASKNM",
+              "cUOMCD","dINVENT_DT","cREFDOC","iBEGIN_QTY",
+              "iRECEIVE_QTY","iISSUE_QTY","iEND_QTY","cREMARK",
+              "cCREABY","cUPDABY","dCREADT","dUPDADT")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      [
+        uuid,
+        cBRANCD,
+        cWH,
+        cBASKCD,
+        cBASKNM,
+        cUOMCD,
+        dateTime,
+        cREFDOC,
+        qtyBegin,
+        iRECEIVE_QTY,
+        iISSUE_QTY,
+        qty,
+        cREMARK,
+        cCREABY,
+        cCREABY,
+        dateTime,
+        dateTime,
+      ]
+    );
+
+    if (proResult.rows.length > 0) {
+      await client.query(
+        `UPDATE "TBR_BASKET_BALANCE" 
+          SET "iQTY" = $5 ,"cUPDABY"= $6 ,"dUPDADT"= $7
+          WHERE "cBRANCD" = $1 AND "cBASKCD" = $2 AND "cUOMCD" = $3 AND "cWH" = $4`,
+        [cBRANCD, cBASKCD, cUOMCD, cWH, qty, cCREABY, dateTime]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO "TBR_BASKET_BALANCE"
+        ("cGUID","cBRANCD","cWH","cBASKCD","cBASKNM",
+        "cUOMCD","iQTY","cCREABY","cUPDABY","dCREADT","dUPDADT")
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          uuid,
+          cBRANCD,
+          cWH,
+          cBASKCD,
+          cBASKNM,
+          cUOMCD,
+          qty,
+          cCREABY,
+          cCREABY,
+          dateTime,
+          dateTime,
+        ]
+      );
+    }
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(message);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
 module.exports = stockRouter;
