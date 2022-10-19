@@ -2373,4 +2373,350 @@ routeRouter.post("/getHisProduct", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ insert TBT_APPOHD +++++++++++++++++++
+routeRouter.post("/addSupplierPOHD", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cPOCD = req.body.cPOCD;
+    var cPOSTATUS = req.body.cPOSTATUS;
+    var cBRANCD = req.body.cBRANCD;
+    var cBRANNM = req.body.cBRANNM;
+    var cSUPPCD = req.body.cSUPPCD;
+    var cSUPPNM = req.body.cSUPPNM;
+    var cPROVINCE = req.body.cPROVINCE;
+    var cVEHICD = req.body.cVEHICD;
+    var cDRIVER = req.body.cDRIVER;
+    var cPLATE = req.body.cPLATE;
+    var cPPROVINCE = req.body.cPPROVINCE;
+    var iCAP_VEH = req.body.iCAP_VEH;
+    var iCAP_PROD = req.body.iCAP_PROD;
+    var iCAP_DIFF = req.body.iCAP_DIFF;
+    var iWEIGHT_VEH = req.body.iWEIGHT_VEH;
+    var iWEIGHT_PROD = req.body.iWEIGHT_PROD;
+    var iWEIGHT_DIFF = req.body.iWEIGHT_DIFF;
+    var iBEFORE_VAT = req.body.iBEFORE_VAT;
+    var iVAT_VAL = req.body.iVAT_VAL;
+    var iSKIP_VAT = req.body.iSKIP_VAT;
+    var iDPBASKET = req.body.iDPBASKET;
+    var iTOTAL = req.body.iTOTAL;
+    var iPAID = req.body.iPAID;
+    var cREMARK = req.body.cREMARK;
+    var iBASKETTOTAL = req.body.iBASKETTOTAL;
+    var cDELFLAG = req.body.cDELFLAG;
+    var cCREATYPE = req.body.cCREATYPE;
+    var dREF_DATE = new Date(req.body.dREF_DATE).toJSON();
+    var cCREABY = req.body.cCREABY;
+    var checkList = await client.query(
+      `SELECT * FROM "TBT_APPOHD" WHERE "cPOCD" = $1`,
+      [cPOCD]
+    );
+
+    if (checkList.rows.length > 0) {
+      await client.query(
+        `UPDATE "TBT_APPOHD" 
+        SET "dPODATE" = $1,"cPOSTATUS"= $2,
+        "cBRANCD"= $3,"cBRANNM"= $4,
+        "cSUPPCD"= $5,"cSUPPNM"= $6,
+        "cPROVINCE"= $7,"cVEHICD"= $8,
+        "cDRIVER"= $9,"cPLATE"= $10,
+        "cPPROVINCE"= $11,"iCAP_VEH"= $12,
+        "iCAP_PROD"= $13,"iCAP_DIFF"= $14,
+        "iWEIGHT_VEH"= $15,"iWEIGHT_PROD"= $16,
+        "iWEIGHT_DIFF"= $17,"iBEFORE_VAT"= $18,
+        "iVAT_VAL"= $19,"iSKIP_VAT"= $20,
+        "iDPBASKET"= $21,"iTOTAL"= $22,
+        "iPAID"= $23,"cREMARK"= $24,
+        "iBASKETTOTAL"= $25,"cDELFLAG"= $26,
+        "cCREATYPE"= $27,"dUPDADT"= $28,
+        "cUPDABY"= $29,"dREF_DATE"= $30
+        WHERE "cPOCD" = $31`,
+        [
+          dateTime,
+          cPOSTATUS,
+          cBRANCD,
+          cBRANNM,
+          cSUPPCD,
+          cSUPPNM,
+          cPROVINCE,
+          cVEHICD,
+          cDRIVER,
+          cPLATE,
+          cPPROVINCE,
+          iCAP_VEH,
+          iCAP_PROD,
+          iCAP_DIFF,
+          iWEIGHT_VEH,
+          iWEIGHT_PROD,
+          iWEIGHT_DIFF,
+          iBEFORE_VAT,
+          iVAT_VAL,
+          iSKIP_VAT,
+          iDPBASKET,
+          iTOTAL,
+          iPAID,
+          cREMARK,
+          iBASKETTOTAL,
+          cDELFLAG,
+          cCREATYPE,
+          dateTime,
+          cCREABY,
+          dREF_DATE,
+          cPOCD,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      await client.query(
+        `INSERT INTO "TBT_APPOHD"("cGUID","cPOCD","dPODATE","cPOSTATUS","cBRANCD","cBRANNM","cSUPPCD","cSUPPNM","cPROVINCE",
+        "cVEHICD","cDRIVER","cPLATE","cPPROVINCE","iCAP_VEH","iCAP_PROD","iCAP_DIFF","iWEIGHT_VEH","iWEIGHT_PROD","iWEIGHT_DIFF",
+        "iBEFORE_VAT","iVAT_VAL","iSKIP_VAT","iDPBASKET","iTOTAL","iPAID","cREMARK","iBASKETTOTAL","cDELFLAG","cCREATYPE",
+        "dCREADT","cCREABY","dUPDADT","cUPDABY","dREF_DATE")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
+          $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34)
+        `,
+        [
+          uuid,
+          cPOCD,
+          dateTime,
+          cPOSTATUS,
+          cBRANCD,
+          cBRANNM,
+          cSUPPCD,
+          cSUPPNM,
+          cPROVINCE,
+          cVEHICD,
+          cDRIVER,
+          cPLATE,
+          cPPROVINCE,
+          iCAP_VEH,
+          iCAP_PROD,
+          iCAP_DIFF,
+          iWEIGHT_VEH,
+          iWEIGHT_PROD,
+          iWEIGHT_DIFF,
+          iBEFORE_VAT,
+          iVAT_VAL,
+          iSKIP_VAT,
+          iDPBASKET,
+          iTOTAL,
+          iPAID,
+          cREMARK,
+          iBASKETTOTAL,
+          cDELFLAG,
+          cCREATYPE,
+          dateTime,
+          cCREABY,
+          dateTime,
+          cCREABY,
+          dREF_DATE,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ insert TBT_APPODT +++++++++++++++++++
+routeRouter.post("/addSupplierPODT", async (req, res) => {
+  try {
+    const client = new Client();
+
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cPOCD = req.body.cPOCD;
+    var iSEQ = req.body.iSEQ;
+    var cPRODCD = req.body.cPRODCD;
+    var cPRODNM = req.body.cPRODNM;
+    var iSSTOCK = req.body.iSSTOCK;
+    var iMSTOCK = req.body.iMSTOCK;
+    var iLSTOCK = req.body.iLSTOCK;
+    var cSUOMCD = req.body.cSUOMCD;
+    var cSUOMNM = req.body.cSUOMNM;
+    var cMUOMCD = req.body.cMUOMCD;
+    var cMUOMNM = req.body.cMUOMNM;
+    var cLUOMCD = req.body.cLUOMCD;
+    var cLUOMNM = req.body.cLUOMNM;
+    var iMARKET = req.body.iMARKET;
+    var iPLUSQTY = req.body.iPLUSQTY;
+    var iENOUGHQTY = req.body.iENOUGHQTY;
+    var iTOTAL = req.body.iTOTAL;
+    var iPURCHASE = req.body.iPURCHASE;
+    var iLUNITPRICE = req.body.iLUNITPRICE;
+    var iNETPRICE = req.body.iNETPRICE;
+    var iMONQTY = req.body.iMONQTY;
+    var iTUEQTY = req.body.iTUEQTY;
+    var iWEDQTY = req.body.iWEDQTY;
+    var iTHUQTY = req.body.iTHUQTY;
+    var iFRIQTY = req.body.iFRIQTY;
+    var iSATQTY = req.body.iSATQTY;
+    var iSUNQTY = req.body.iSUNQTY;
+    var cSTATUS = req.body.cSTATUS;
+    var cCREABY = req.body.cCREABY;
+
+    var checkList = await client.query(
+      `SELECT * FROM "TBT_APPODT" WHERE "cPOCD" = $1 AND "iSEQ" = $2`,
+      [cPOCD,iSEQ]
+    );
+
+    if (checkList.rows.length > 0) {
+      await client.query(
+        `UPDATE "TBT_APPODT" 
+        SET "cPRODCD" = $3,"cPRODNM" = $4,
+        "iSSTOCK" = $5,"iMSTOCK" = $6,
+        "iLSTOCK" = $7,"cSUOMCD" = $8,
+        "cSUOMNM" = $9,"cMUOMCD" = $10,
+        "cMUOMNM" = $11,"cLUOMCD" = $12,
+        "cLUOMNM" = $13,"iMARKET" = $14,
+        "iPLUSQTY" = $15,"iENOUGHQTY" = $16,
+        "iTOTAL" = $17,"iPURCHASE" = $18,
+        "iLUNITPRICE" = $19,"iNETPRICE" = $20,
+        "iMONQTY" = $21,"iTUEQTY" = $22,
+        "iWEDQTY" = $23,"iTHUQTY" = $24,
+        "iFRIQTY" = $25,"iSATQTY" = $26,
+        "iSUNQTY" = $27,"cSTATUS" = $28,
+        "dUPDADT" = $29,"cUPDABY" = $30
+        WHERE "cPOCD" = $1 AND "iSEQ" = $2`,
+        [
+          cPOCD,
+          iSEQ,
+          cPRODCD,
+          cPRODNM ,
+          iSSTOCK,
+          iMSTOCK,
+          iLSTOCK,
+          cSUOMCD,
+          cSUOMNM,
+          cMUOMCD,
+          cMUOMNM,
+          cLUOMCD,
+          cLUOMNM,
+          iMARKET,
+          iPLUSQTY,
+          iENOUGHQTY,
+          iTOTAL,
+          iPURCHASE,
+          iLUNITPRICE,
+          iNETPRICE,
+          iMONQTY,
+          iTUEQTY,
+          iWEDQTY,
+          iTHUQTY,
+          iFRIQTY,
+          iSATQTY,
+          iSUNQTY,
+          cSTATUS,
+          dateTime,
+          cCREABY,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    } else {
+      await client.query(
+        `INSERT INTO "TBT_APPODT" ("cGUID","cPOCD","iSEQ","cPRODCD","cPRODNM","iSSTOCK",
+        "iMSTOCK","iLSTOCK","cSUOMCD","cSUOMNM","cMUOMCD","cMUOMNM","cLUOMCD","cLUOMNM",
+        "iMARKET","iPLUSQTY","iENOUGHQTY","iTOTAL","iPURCHASE","iLUNITPRICE","iNETPRICE",
+        "iMONQTY","iTUEQTY","iWEDQTY","iTHUQTY","iFRIQTY","iSATQTY","iSUNQTY","cSTATUS",
+        "dCREADT","cCREABY","dUPDADT","cUPDABY")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
+          $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33)`,
+        [
+          uuid,
+          cPOCD,
+          iSEQ,
+          cPRODCD,
+          cPRODNM ,
+          iSSTOCK,
+          iMSTOCK,
+          iLSTOCK,
+          cSUOMCD,
+          cSUOMNM,
+          cMUOMCD,
+          cMUOMNM,
+          cLUOMCD,
+          cLUOMNM,
+          iMARKET,
+          iPLUSQTY,
+          iENOUGHQTY,
+          iTOTAL,
+          iPURCHASE,
+          iLUNITPRICE,
+          iNETPRICE,
+          iMONQTY,
+          iTUEQTY,
+          iWEDQTY,
+          iTHUQTY,
+          iFRIQTY,
+          iSATQTY,
+          iSUNQTY,
+          cSTATUS,
+          dateTime,
+          cCREABY,
+          dateTime,
+          cCREABY,
+        ]
+      );
+
+      await client.end();
+
+      const message = {
+        success: true,
+        message: "success",
+        result: null,
+      };
+      res.json(message);
+    }
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
 module.exports = routeRouter;
