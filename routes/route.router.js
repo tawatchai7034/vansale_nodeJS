@@ -8,7 +8,7 @@ const fs = require("fs");
 const date = require("date-and-time");
 
 let dateTime = new Date().toJSON();
-var uuid = `${crypto.randomUUID()}`;
+
 
 // +++++++++++++++++++ TBM_ROUTE +++++++++++++++++++
 routeRouter.post("/getRoute", async (req, res) => {
@@ -259,6 +259,7 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
 routeRouter.post("/updatePODT-PREPAIRSTATUS", async (req, res) => {
   try {
     const client = new Client();
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -302,6 +303,7 @@ routeRouter.post("/updatePODT-PREPAIRSTATUS", async (req, res) => {
 routeRouter.post("/updatePOHD-PREPAIRCFSTATUS", async (req, res) => {
   try {
     const client = new Client();
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -344,7 +346,7 @@ routeRouter.post("/updatePOHD-PREPAIRCFSTATUS", async (req, res) => {
 routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -500,7 +502,7 @@ routeRouter.post("/addPOPREPAIRHD", async (req, res) => {
 routeRouter.post("/updatePOPREPAIRHD", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -643,7 +645,7 @@ routeRouter.post("/deletePOPREPAIR", async (req, res) => {
 routeRouter.post("/addPOPREPAIRDT", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -792,7 +794,7 @@ routeRouter.post("/addPOPREPAIRDT", async (req, res) => {
 routeRouter.post("/updatePOPREPAIRDT", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -970,7 +972,7 @@ routeRouter.post("/getRouteToday", async (req, res) => {
 routeRouter.post("/addPOCheckIn", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1042,7 +1044,7 @@ routeRouter.post("/addPOCheckIn", async (req, res) => {
 routeRouter.post("/updateICLPro", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1122,7 +1124,7 @@ routeRouter.post("/updateICLPro", async (req, res) => {
 routeRouter.post("/addRTPRO", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1224,7 +1226,7 @@ routeRouter.post("/addRTPRO", async (req, res) => {
 routeRouter.post("/unbanRTPRO", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1266,7 +1268,7 @@ routeRouter.post("/unbanRTPRO", async (req, res) => {
 routeRouter.post("/addLOSSPRO", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1382,7 +1384,7 @@ routeRouter.post("/addLOSSPRO", async (req, res) => {
 routeRouter.post("/addBKR", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1477,7 +1479,7 @@ routeRouter.post("/addBKR", async (req, res) => {
 routeRouter.post("/searchBasket", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1511,7 +1513,7 @@ routeRouter.post("/searchBasket", async (req, res) => {
 routeRouter.post("/mobilePayment", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1707,7 +1709,7 @@ routeRouter.get("/getProType", async (req, res) => {
 routeRouter.post("/updateiSEQROUTE", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1757,7 +1759,7 @@ routeRouter.post("/updateiSEQROUTE", async (req, res) => {
 routeRouter.post("/deliveryPO", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -1854,7 +1856,7 @@ routeRouter.post("/getArrangePro", async (req, res) => {
 routeRouter.post("/addSendMoney", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -2377,7 +2379,7 @@ routeRouter.post("/getHisProduct", async (req, res) => {
 routeRouter.post("/addSupplierPOHD", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -2551,7 +2553,7 @@ routeRouter.post("/addSupplierPOHD", async (req, res) => {
 routeRouter.post("/addSupplierPODT", async (req, res) => {
   try {
     const client = new Client();
-
+    var uuid = `${crypto.randomUUID()}`;
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
