@@ -7,14 +7,12 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const date = require("date-and-time");
 
-let dateTime = new Date().toJSON();
-
-
 // +++++++++++++++++++ add Stock Balance +++++++++++++++++++
 stockRouter.post("/addStockBalance", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -130,6 +128,7 @@ stockRouter.post("/addStockCard", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -295,6 +294,7 @@ stockRouter.post("/addReturnHD", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -399,6 +399,7 @@ stockRouter.post("/updateReturnHD", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -474,6 +475,7 @@ stockRouter.post("/addReturnDT", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -642,6 +644,7 @@ stockRouter.post("/addBasketBalanch", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
@@ -720,6 +723,7 @@ stockRouter.post("/addBasketStockCard", async (req, res) => {
   try {
     const client = new Client();
     var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
     await client.connect(function (err) {
       if (!err) {
         console.log("Connected to Vansale successfully");
