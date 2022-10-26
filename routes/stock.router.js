@@ -850,4 +850,44 @@ stockRouter.post("/addBasketStockCard", async (req, res) => {
     res.json(result);
   }
 });
+
+// +++++++++++++++++++ get Stock Balance +++++++++++++++++++
+stockRouter.post("/getStockBalance", async (req, res) => {
+  try {
+    const client = new Client();
+    var uuid = `${crypto.randomUUID()}`;
+    let dateTime = new Date().toJSON();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cBRANCD = req.body.cBRANCD;
+    var cWH = req.body.cWH;
+
+    const proResult = await client.query(
+      `SELECT * FROM "TBR_INVENTORY_BALANCE" WHERE "cBRANCD" = $1 AND  "cWH" = $2`,
+      [cBRANCD, cWH]
+    );
+
+    await client.end();
+
+    const message = {
+      success: true,
+      message: "success",
+      result: null,
+    };
+    res.json(proResult.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
 module.exports = stockRouter;
