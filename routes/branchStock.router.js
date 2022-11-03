@@ -7,8 +7,6 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const date = require("date-and-time");
 
-
-
 // +++++++++++++++++++ get TBT_APPOHD +++++++++++++++++++
 branchStockRouter.post("/getSupplierOrder", async (req, res) => {
   try {
@@ -27,7 +25,7 @@ branchStockRouter.post("/getSupplierOrder", async (req, res) => {
 
     const result = await client.query(
       `SELECT * FROM "TBT_APPOHD" 
-        WHERE "cBRANCD" = $1 AND  "dPODATE"::DATE > $2
+        WHERE "cBRANCD" = $1 AND  "dPODATE"::DATE >= $2
         ORDER BY "dPODATE"`,
       [cBRANCD, dPODATE]
     );
@@ -86,12 +84,68 @@ branchStockRouter.post("/getSPOrderDT", async (req, res) => {
       INNER  JOIN "TBM_BRAND" AS BND
       ON BND."cBRNCD" = PR."cBRNDCD"
         WHERE "cPOCD" = $1 AND PDT."cPRODCD" LIKE $2 AND PDT."cPRODNM" LIKE $3`,
-      [cPOCD,cPRODCD,cPRODNM]
+      [cPOCD, cPRODCD, cPRODNM]
     );
+    var products = [];
+    for (var i = 0; i < result.rows.length; i++) {
+      var data = {
+        cGUID: result.rows[i].cGUID,
+        cPOCD: result.rows[i].cPOCD,
+        iSEQ: result.rows[i].iSEQ,
+        cPRODCD: result.rows[i].cPRODCD,
+        cPRODNM: result.rows[i].cPRODNM,
+        iSSTOCK: result.rows[i].iSSTOCK,
+        iMSTOCK: result.rows[i].iMSTOCK,
+        iLSTOCK: result.rows[i].iLSTOCK,
+        cSUOMCD: result.rows[i].cSUOMCD,
+        cSUOMNM: result.rows[i].cSUOMNM,
+        cMUOMCD: result.rows[i].cMUOMCD,
+        cMUOMNM: result.rows[i].cMUOMNM,
+        cLUOMCD: result.rows[i].cLUOMCD,
+        cLUOMNM: result.rows[i].cLUOMNM,
+        iMARKET: result.rows[i].iMARKET,
+        iPLUSQTY: result.rows[i].iPLUSQTY,
+        iENOUGHQTY: result.rows[i].iENOUGHQTY,
+        iTOTAL: result.rows[i].iTOTAL,
+        iPURCHASE: result.rows[i].iPURCHASE,
+        iLUNITPRICE: result.rows[i].iLUNITPRICE,
+        iNETPRICE: result.rows[i].iNETPRICE,
+        cMONQTY: result.rows[i].cMONQTY,
+        cTUEQTY: result.rows[i].cTUEQTY,
+        cWEDQTY: result.rows[i].cWEDQTY,
+        cTHUQTY: result.rows[i].cTHUQTY,
+        cFRIQTY: result.rows[i].cFRIQTY,
+        cSATQTY: result.rows[i].cSATQTY,
+        cSUNQTY: result.rows[i].cSUNQTY,
+        cSTATUS: result.rows[i].cSTATUS,
+        dCREADT: result.rows[i].dCREADT,
+        cCREABY: result.rows[i].cCREABY,
+        dUPDADT: result.rows[i].dUPDADT,
+        cUPDABY: result.rows[i].cUPDABY,
+        cREFENOUGH: result.rows[i].cREFENOUGH,
+        cPHOTO_SERV: result.rows[i].cPHOTO_SERV,
+        cPHOTO_PATH: result.rows[i].cPHOTO_PATH,
+        cPHOTO_NM: result.rows[i].cPHOTO_NM,
+        cBASKCD: result.rows[i].cBASKCD,
+        cBASKNM: result.rows[i].cBASKNM,
+        iPRICE: result.rows[i].iPRICE,
+        cTYPE: result.rows[i].cTYPE,
+        cTYPENM: result.rows[i].cTYPENM,
+        cCATECD: result.rows[i].cCATECD,
+        cCATENM: result.rows[i].cCATENM,
+        cSUBCATECD: result.rows[i].cSUBCATECD,
+        cSUBCATENM: result.rows[i].cSUBCATENM,
+        cBRNDCD: result.rows[i].cBRNDCD,
+        cBRNNM: result.rows[i].cBRNNM,
+        cCHECK: false,
+      };
+
+      products.push(data);
+    }
 
     await client.end();
 
-    res.json(result.rows);
+    res.json(products);
   } catch (err) {
     const result = {
       success: false,
