@@ -7,9 +7,6 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const date = require("date-and-time");
 
-
-
-
 // +++++++++++++++++++ TBM_ROUTE +++++++++++++++++++
 routeRouter.post("/getRoute", async (req, res) => {
   try {
@@ -2739,5 +2736,85 @@ routeRouter.post("/addSupplierPODT", async (req, res) => {
     res.json(result);
   }
 });
+
+// +++++++++++++++++++ get route name +++++++++++++++++++
+routeRouter.post("/getRouteGroup", async (req, res) => {
+  try {
+    const client = new Client();
+    let dateTime = new Date().toJSON();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+
+    var cGRPCD = req.body.cGRPCD;
+    var cBRANCD = req.body.cBRANCD;
+
+    const result = await client.query(
+      `SELECT * FROM "TBM_ROUTE" WHERE "cBRANCD" = $1 AND "cGRPCD" = $2`,
+      [cBRANCD,cGRPCD]
+    );
+
+    await client.end();
+
+    res.json(result.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
+// +++++++++++++++++++ get customer in route +++++++++++++++++++
+routeRouter.post("/getCustInRoute", async (req, res) => {
+  try {
+    const client = new Client();
+    let dateTime = new Date().toJSON();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cBRANCD = req.body.cBRANCD;
+    var cGRPCD = req.body.cGRPCD;
+    var cRTECD = req.body.cRTECD;
+    var cCUSTNM = req.body.cCUSTNM;
+
+    const result = await client.query(
+      `SELECT CHD."cCUSTCD",CHD."cCUSTNM",CDT."cADDRESS",CDT."cSUBDIST",CDT."cDISTRICT",CDT."cPROVINCE",CDT."cPOSTCD",
+      CHD."cBRANCD",CR."cGRPCD",CR."cRTECD",R."cRTENM",CDT."cLATITUDE",CDT."cLONGTITUDE",CDT."cPHOTO_SERV",CDT."cPHOTO_PATH",
+      CDT."cDISTANCS",CHD."cCONTACT_TEL"
+      FROM "TBM_CUSTOMER_ROUTE" AS  CR
+      INNER JOIN "TBM_CUSTOMER_HD" AS CHD
+      ON CHD."cCUSTCD" = CR."cCUSTCD"
+      INNER JOIN "TBM_CUSTOMER_DT" AS CDT
+      ON CHD."cCUSTCD" = CDT."cCUSTCD"
+      INNER JOIN "TBM_ROUTE" AS R
+      ON R."cRTECD" = CR."cRTECD"
+      WHERE CHD."cBRANCD" = $1 AND  CR."cGRPCD"= $2 AND  CR."cRTECD" =$3 AND CHD."cCUSTNM" LIKE $4`,
+      [cBRANCD,cGRPCD,cRTECD,cCUSTNM]
+    );
+
+    await client.end();
+
+    res.json(result.rows);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
+
 
 module.exports = routeRouter;
