@@ -142,14 +142,16 @@ routeRouter.post("/getPoHDAndPoDT", async (req, res) => {
     var cPRODCD = req.body.cPRODCD;
 
     const result = await client.query(
-      `SELECT HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",count(DT.*) AS iItems ,
+      `SELECT HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",
+      (DT."iSSIZEQTY"+DT."iMSIZEQTY"+DT."iLSIZEQTY") AS iItems ,
       count(DT."cBASKCD")AS iBasket,
       DT."iTOTAL"   
       FROM "TBT_POHD" HD
       INNER JOIN "TBT_PODT" DT ON HD."cPOCD" = DT."cPOCD"
       INNER JOIN "TBM_PRODUCT" PR ON PR."cPRODCD" = DT."cPRODCD"
       WHERE HD."cCUSTCD" = $1 AND HD."cPOCD" = $2 AND  DT."cPRODNM" LIKE $3 AND  DT."cPRODCD" LIKE $4
-      GROUP BY  HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",DT."cBASKCD",DT."iTOTAL"
+      GROUP BY  HD."cCUSTCD",PR."cTYPE",HD."cPOCD",DT."cPRODCD",
+      DT."cPRODNM",DT."cBASKCD",DT."cBASKNM",(DT."iSSIZEQTY"+DT."iMSIZEQTY"+DT."iLSIZEQTY"),DT."iTOTAL"
       ORDER BY  DT."iTOTAL" DESC`,
       [custcd, pocd, cPRODNM, cPRODCD]
     );
@@ -242,7 +244,6 @@ routeRouter.post("/queryPODTwithPOCD", async (req, res) => {
     );
 
     await client.end();
-
     res.json(result.rows);
   } catch (err) {
     const result = {
