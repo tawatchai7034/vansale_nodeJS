@@ -2610,7 +2610,7 @@ routeRouter.post("/addSupplierPODT", async (req, res) => {
 
     var checkList = await client.query(
       `SELECT * FROM "TBT_APPODT" WHERE "cPOCD" = $1 AND "iSEQ" = $2`,
-      [cPOCD,iSEQ]
+      [cPOCD, iSEQ]
     );
 
     if (checkList.rows.length > 0) {
@@ -2635,7 +2635,7 @@ routeRouter.post("/addSupplierPODT", async (req, res) => {
           cPOCD,
           iSEQ,
           cPRODCD,
-          cPRODNM ,
+          cPRODNM,
           iSSTOCK,
           iMSTOCK,
           iLSTOCK,
@@ -2687,7 +2687,7 @@ routeRouter.post("/addSupplierPODT", async (req, res) => {
           cPOCD,
           iSEQ,
           cPRODCD,
-          cPRODNM ,
+          cPRODNM,
           iSSTOCK,
           iMSTOCK,
           iLSTOCK,
@@ -2756,7 +2756,7 @@ routeRouter.post("/getRouteGroup", async (req, res) => {
 
     const result = await client.query(
       `SELECT * FROM "TBM_ROUTE" WHERE "cBRANCD" = $1 AND "cGRPCD" = $2`,
-      [cBRANCD,cGRPCD]
+      [cBRANCD, cGRPCD]
     );
 
     await client.end();
@@ -2801,7 +2801,7 @@ routeRouter.post("/getCustInRoute", async (req, res) => {
       INNER JOIN "TBM_ROUTE" AS R
       ON R."cRTECD" = CR."cRTECD"
       WHERE CHD."cBRANCD" = $1 AND  CR."cGRPCD"= $2 AND  CR."cRTECD" =$3 AND CHD."cCUSTNM" LIKE $4`,
-      [cBRANCD,cGRPCD,cRTECD,cCUSTNM]
+      [cBRANCD, cGRPCD, cRTECD, cCUSTNM]
     );
 
     await client.end();
@@ -2817,5 +2817,49 @@ routeRouter.post("/getCustInRoute", async (req, res) => {
   }
 });
 
+// +++++++++++++++++++ get customer history po with date +++++++++++++++++++
+routeRouter.post("/getCustHisWithDate", async (req, res) => {
+  try {
+    const client = new Client();
+    let dateTime = new Date().toJSON();
+    await client.connect(function (err) {
+      if (!err) {
+        console.log("Connected to Vansale successfully");
+      } else {
+        console.log(err.message);
+      }
+    });
+    var cCUSTCD = req.body.cCUSTCD;
+    var dSHIPDATE = req.body.dSHIPDATE;
+    var listPro = [];
+
+    const resultPOHD = await client.query(
+      `SELECT * FROM "TBT_POHD" WHERE "cCUSTCD" = $1 AND "dSHIPDATE"::date = $2`,
+      [cCUSTCD, dSHIPDATE]
+    );
+
+    if (resultPOHD.rows.length > 0) {
+      for (var i = 0; i < resultPOHD.rows.length; i++) {
+        const resultPODT = await client.query(
+          `SELECT * FROM "TBT_PODT" WHERE "cPOCD" = $1 ORDER BY "iSEQ"`,
+          [resultPOHD.rows[i].cPOCD]
+        );
+
+        for (var j = 0; j < resultPODT.rows.length; j++) {
+          listPro.push(resultPODT.rows[j]);
+        }
+      }
+    }
+    await client.end();
+    res.json(listPro);
+  } catch (err) {
+    const result = {
+      success: false,
+      message: err,
+      result: null,
+    };
+    res.json(result);
+  }
+});
 
 module.exports = routeRouter;
