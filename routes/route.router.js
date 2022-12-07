@@ -997,7 +997,7 @@ routeRouter.post("/addPOCheckIn", async (req, res) => {
       `SELECT "cPOCD" FROM "TBT_PO_CHECKIN"`
     );
     for (var i = 0; i < checkInList.rows.length; i++) {
-      if (checkInList.rows[i].cPOCD == cPOCD) {
+      if (checkInList.rows[i].cPOCD == cPOCD && checkInList.rows[i].dINVENT_DT == dateTime) {
         poRepeat = true;
       }
     }
@@ -1005,9 +1005,19 @@ routeRouter.post("/addPOCheckIn", async (req, res) => {
     if (poRepeat == false) {
       const result = await client.query(
         `INSERT INTO "TBT_PO_CHECKIN" 
-        ("cGUID","cPOCD","iCHELAT","iCHELNG","cCREABY","cUPDABY","dCREADT","dUPDADT")
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [uuid, cPOCD, iCHELAT, iCHELNG, cCREABY, cCREABY, dateTime, dateTime]
+        ("cGUID","cPOCD","iCHELAT","iCHELNG","cCREABY","cUPDABY","dCREADT","dUPDADT","dINVENT_DT")
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [
+          uuid,
+          cPOCD,
+          iCHELAT,
+          iCHELNG,
+          cCREABY,
+          cCREABY,
+          dateTime,
+          dateTime,
+          dateTime,
+        ]
       );
 
       await client.end();
@@ -1022,8 +1032,8 @@ routeRouter.post("/addPOCheckIn", async (req, res) => {
       const result = await client.query(
         `UPDATE "TBT_PO_CHECKIN" 
         SET "iCHELAT" = $1,"iCHELNG" = $2,"cUPDABY" = $3,"dUPDADT"= $4
-        WHERE "cPOCD" = $5`,
-        [iCHELAT, iCHELNG, cCREABY, dateTime, cPOCD]
+        WHERE "cPOCD" = $5 AND "dINVENT_DT" = $6`,
+        [iCHELAT, iCHELNG, cCREABY, dateTime, cPOCD, dateTime]
       );
 
       await client.end();
