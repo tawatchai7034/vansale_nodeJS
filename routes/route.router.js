@@ -997,7 +997,10 @@ routeRouter.post("/addPOCheckIn", async (req, res) => {
       `SELECT "cPOCD" FROM "TBT_PO_CHECKIN"`
     );
     for (var i = 0; i < checkInList.rows.length; i++) {
-      if (checkInList.rows[i].cPOCD == cPOCD && checkInList.rows[i].dINVENT_DT == dateTime) {
+      if (
+        checkInList.rows[i].cPOCD == cPOCD &&
+        checkInList.rows[i].dINVENT_DT == dateTime
+      ) {
         poRepeat = true;
       }
     }
@@ -1628,6 +1631,16 @@ routeRouter.post("/mobilePayment", async (req, res) => {
           cCQDT,
         ]
       );
+      var poCheck = await client.query(
+        `SELECT * FROM "TBT_POHD" WHERE "cPOCD" = $1`,
+        [cDOCREF]
+      );
+      if (poCheck.rows.length > 0) {
+        await client.query(
+          `UPDATE "TBT_POHD" SET "cPOSTATUS" = '4' WHERE "cPOCD" = $1`,
+          [cDOCREF]
+        );
+      }
 
       await client.end();
 
